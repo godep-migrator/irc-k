@@ -1,0 +1,30 @@
+{
+	"ImportPath": "github.com/canthefason/irc-k",
+	"GoVersion": "go1.3",
+	"Deps": [
+		{
+			"ImportPath": "code.google.com/p/gomock/gomock",
+			"Rev": "5d0b59c9f277f888d2c70b00908236a30ab90f45"
+		},
+		{
+			"ImportPath": "github.com/fluffle/goirc/client",
+			"Rev": "7c53f41c562e5cbccca93ef0ff7215917fee8504"
+		},
+		{
+			"ImportPath": "github.com/fluffle/goirc/logging",
+			"Rev": "7c53f41c562e5cbccca93ef0ff7215917fee8504"
+		},
+		{
+			"ImportPath": "github.com/fluffle/goirc/state",
+			"Rev": "7c53f41c562e5cbccca93ef0ff7215917fee8504"
+		},
+		{
+			"ImportPath": "github.com/rcrowley/go-metrics",
+			"Rev": "3be59ceb5538550555459fb77d0efe0e218cdfc7"
+		},
+		{
+			"ImportPath": "github.com/rcrowley/go-tigertonic",
+			"Rev": "2deaff46872c690988191beb0d1b1a5b7f40e9bc"
+		}
+	]
+}
