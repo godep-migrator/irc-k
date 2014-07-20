@@ -1,100 +1,124 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"os"
-	"strings"
+	"net/http"
+	"net/url"
+	"time"
 
 	irc "github.com/fluffle/goirc/client"
+	"github.com/rcrowley/go-tigertonic"
 )
 
 var (
-	quit chan bool
-	in   chan string
+	quit     chan bool
+	in       chan string
+	nickname *string
+	c        *irc.Conn
+	connMap  map[string]*irc.Conn
+	// channelMap map[string]map[string]struct{}
 )
 
 func init() {
 	quit = make(chan bool)
 	// set up a goroutine to read commands from stdin
 	in = make(chan string)
+	connMap = make(map[string]*irc.Conn)
 }
 
 func main() {
-	// k := kite.New("irc", "0.0.1")
 
-	cfg := irc.NewConfig("kodingcan")
+	// go connect("koding-bot", channels)
+
+	mux := tigertonic.NewTrieServeMux()
+	// mux.Handle("POST", "/connect", tigertonic.Timed(tigertonic.Marshaled(connect), "connect", nil))
+	// mux.Handle("POST", "/join", tigertonic.Timed(tigertonic.Marshaled(join), "join", nil))
+	mux.Handle("POST", "/sendMessage", tigertonic.Timed(tigertonic.Marshaled(sendMessage), "sendMessage", nil))
+
+	tigertonic.NewServer(":9000", tigertonic.Logged(mux, nil)).ListenAndServe()
+
+}
+
+// func connect(u *url.URL, h http.Header, conn *Connection) (int, http.Header, *Response, error) {
+
+// 	registerHandlers(c)
+
+// 	if err := c.Connect(); err != nil {
+// 		return http.StatusBadRequest, nil, &Response{false, err}, nil
+// 	} else {
+// 		fmt.Printf(c.String())
+// 	}
+
+// 	connMap[conn.Nickname] = c
+
+// 	return http.StatusOK, nil, &Response{true, nil}, nil
+// }
+
+type Message struct {
+	Nickname  string    `json:"nickname"`
+	Body      string    `json:"body"`
+	Channel   string    `json:"channel"`
+	Timestamp time.Time `json:"timestamp"`
+}
+
+type Response struct {
+	Response bool  `json:"response"`
+	Error    error `json:"error"`
+}
+
+func connect(m *Message) (*irc.Conn, error) {
+	fmt.Println("hu")
+	conn, ok := connMap[m.Nickname]
+	if ok {
+		return conn, nil
+	}
+
+	fmt.Println("ho")
+
+	cfg := irc.NewConfig(m.Nickname)
 	cfg.SSL = true
 	cfg.Server = "irc.freenode.net:7000"
 	cfg.NewNick = func(n string) string { return n + "^" }
-	c := irc.Client(cfg)
-
-	registerHandlers(c)
-
-	go readInput()
-
-	// set up a goroutine to do parsey things with the stuff from stdin
-	go parseCommand(c)
+	c = irc.Client(cfg)
 
 	if err := c.Connect(); err != nil {
-		fmt.Printf("Connection error: %s\n", err)
+		return nil, err
 	} else {
 		fmt.Printf(c.String())
 	}
 
-	<-quit
+	// time.After(500 * time.Millisecond)
+
+	connMap[m.Nickname] = c
+
+	return c, nil
 }
 
-func readInput() {
-	con := bufio.NewReader(os.Stdin)
-	for {
-		s, err := con.ReadString('\n')
-		if err != nil {
-			// wha?, maybe ctrl-D...
-			close(in)
-			break
-		}
-		// no point in sending empty lines down the channel
-		if len(s) > 2 {
-			in <- s[0 : len(s)-1]
-		}
+func sendMessage(_ *url.URL, _ http.Header, m *Message) (int, http.Header, *Response, error) {
+	fmt.Println("mey")
+	conn, err := connect(m)
+	if err != nil {
+		return http.StatusBadRequest, nil, &Response{Response: false, Error: err}, nil
 	}
-}
 
-func parseCommand(c *irc.Conn) {
-	for cmd := range in {
-		if cmd[0] == ':' {
-			switch idx := strings.Index(cmd, " "); {
-			case cmd[1] == 'd':
-				fmt.Printf(c.String())
-			case cmd[1] == 'f':
-				if len(cmd) > 2 && cmd[2] == 'e' {
-					// enable flooding
-					c.Config().Flood = true
-				} else if len(cmd) > 2 && cmd[2] == 'd' {
-					// disable flooding
-					c.Config().Flood = false
-				}
-				c.Privmsg("#canthefason-test", cmd[idx+1:len(cmd)])
-			case idx == -1:
-				continue
-			case cmd[1] == 'q':
-				c.Quit(cmd[idx+1 : len(cmd)])
-				quit <- true
-			case cmd[1] == 'j':
-				c.Join(cmd[idx+1 : len(cmd)])
-			case cmd[1] == 'p':
-				c.Part(cmd[idx+1 : len(cmd)])
-			}
-		} else {
-			c.Raw(cmd)
-		}
-	}
+	fmt.Println("hey")
+
+	channel := fmt.Sprintf("#%s", m.Channel)
+	conn.Join(channel)
+
+	// time.Sleep()
+
+	fmt.Println("body", m.Body)
+	conn.Privmsg(channel, m.Body)
+
+	return http.StatusOK, nil, &Response{true, nil}, nil
 }
 
 func registerHandlers(c *irc.Conn) {
 	c.HandleFunc("connected",
-		func(conn *irc.Conn, line *irc.Line) { conn.Join("#canthefason-test") })
+		func(conn *irc.Conn, line *irc.Line) {
+			// connected
+		})
 
 	c.HandleFunc("disconnected",
 		func(conn *irc.Conn, line *irc.Line) { quit <- true })
