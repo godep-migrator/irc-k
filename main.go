@@ -12,11 +12,12 @@ import (
 )
 
 var (
-	quit     chan bool
-	nickname *string
-	c        *irc.Conn
-	connMap  map[string]*Connection
-	connRes  chan *Connection
+	quit       chan bool
+	nickname   *string
+	c          *irc.Conn
+	connMap    map[string]*Connection
+	connRes    chan error
+	ErrTimeout = errors.New("connection timeout")
 	// channelMap map[string]map[string]struct{}
 )
 
@@ -26,7 +27,7 @@ const (
 
 func init() {
 	quit = make(chan bool)
-	connRes = make(chan *Connection)
+	connRes = make(chan error)
 	// set up a goroutine to read commands from stdin
 	connMap = make(map[string]*Connection)
 }
@@ -44,13 +45,38 @@ func main() {
 type Connection struct {
 	Nickname string
 	IrcConn  *irc.Conn
-	Err      error
 }
 
 func (c *Connection) sendMessage(m *Message) {
 	channel := fmt.Sprintf("#%s", m.Channel)
 	c.IrcConn.Join(channel)
 	c.IrcConn.Privmsg(channel, m.Body)
+}
+
+func (c *Connection) connect(conn *irc.Conn) error {
+	c.IrcConn = conn
+
+	go func() {
+		if err := c.IrcConn.Connect(); err != nil {
+			connRes <- err
+			return
+		}
+		// just for debugging purposes
+		fmt.Printf(conn.String())
+		connRes <- nil
+	}()
+
+	select {
+	case err := <-connRes:
+		if err != nil {
+			return err
+		}
+	case <-time.After(CONN_TIMEOUT):
+		c.IrcConn.Quit()
+		return ErrTimeout
+	}
+
+	return nil
 }
 
 type Message struct {
@@ -61,64 +87,52 @@ type Message struct {
 }
 
 type Response struct {
-	Success bool  `json:"response"`
-	Error   error `json:"error"`
+	Success bool   `json:"response"`
+	Error   string `json:"error"`
 }
 
-func connectClient(m *Message) {
+func connectClient(m *Message) (*Connection, error) {
 	conn, ok := connMap[m.Nickname]
 	if ok {
-		connRes <- conn
+		return conn, nil
 	}
+
+	conn = new(Connection)
+	conn.Nickname = m.Nickname
 
 	cfg := irc.NewConfig(m.Nickname)
 	cfg.SSL = true
 	cfg.Server = "irc.freenode.net:7000"
 	cfg.NewNick = func(n string) string { return n + "^" }
-	c = irc.Client(cfg)
-
-	conn = new(Connection)
-	conn.Nickname = m.Nickname
-	if err := c.Connect(); err != nil {
-		conn.Err = err
-		connRes <- conn
+	err := conn.connect(irc.Client(cfg))
+	if err != nil {
+		return nil, err
 	}
 
-	// just for debugging purposes
-	fmt.Printf(c.String())
-	conn.IrcConn = c
 	connMap[m.Nickname] = conn
 
-	connRes <- conn
+	return conn, nil
 }
 
 func prepareErrResponse(err error) Response {
 	fmt.Printf("Error occurred: %s", err)
-	return Response{Success: false, Error: err}
-}
-
-func prepareConnection(m *Message, r render.Render) *Connection {
-	go connectClient(m)
-
-	select {
-	case conn := <-connRes:
-		if conn.Err != nil {
-			r.JSON(400, prepareErrResponse(conn.Err))
-			return nil
-		}
-		return conn
-	case <-time.After(CONN_TIMEOUT):
-		r.JSON(408, prepareErrResponse(errors.New("connection timeout")))
-		return nil
-	}
+	return Response{Success: false, Error: err.Error()}
 }
 
 func sendMessage(_ martini.Params, m Message, r render.Render) {
-	conn := prepareConnection(&m, r)
+	conn, err := connectClient(&m)
+	if err != nil {
+		status := 400
+		if err == ErrTimeout {
+			status = 408
+		}
+		r.JSON(status, prepareErrResponse(err))
+		return
+	}
 
 	conn.sendMessage(&m)
 
-	r.JSON(200, Response{true, nil})
+	r.JSON(200, Response{true, ""})
 }
 
 func registerHandlers(c *irc.Conn) {
