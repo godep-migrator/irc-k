@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -14,14 +15,20 @@ var (
 	quit     chan bool
 	nickname *string
 	c        *irc.Conn
-	connMap  map[string]*irc.Conn
+	connMap  map[string]*Connection
+	connRes  chan *Connection
 	// channelMap map[string]map[string]struct{}
+)
+
+const (
+	CONN_TIMEOUT = 5 * time.Second
 )
 
 func init() {
 	quit = make(chan bool)
+	connRes = make(chan *Connection)
 	// set up a goroutine to read commands from stdin
-	connMap = make(map[string]*irc.Conn)
+	connMap = make(map[string]*Connection)
 }
 
 func main() {
@@ -34,6 +41,18 @@ func main() {
 
 }
 
+type Connection struct {
+	Nickname string
+	IrcConn  *irc.Conn
+	Err      error
+}
+
+func (c *Connection) sendMessage(m *Message) {
+	channel := fmt.Sprintf("#%s", m.Channel)
+	c.IrcConn.Join(channel)
+	c.IrcConn.Privmsg(channel, m.Body)
+}
+
 type Message struct {
 	Nickname  string    `json:"nickname" binding:"required"`
 	Body      string    `json:"body" binding:"required"`
@@ -42,14 +61,14 @@ type Message struct {
 }
 
 type Response struct {
-	Response bool  `json:"response"`
-	Error    error `json:"error"`
+	Success bool  `json:"response"`
+	Error   error `json:"error"`
 }
 
-func connect(m *Message) (*irc.Conn, error) {
+func connectClient(m *Message) {
 	conn, ok := connMap[m.Nickname]
 	if ok {
-		return conn, nil
+		connRes <- conn
 	}
 
 	cfg := irc.NewConfig(m.Nickname)
@@ -58,28 +77,46 @@ func connect(m *Message) (*irc.Conn, error) {
 	cfg.NewNick = func(n string) string { return n + "^" }
 	c = irc.Client(cfg)
 
+	conn = new(Connection)
+	conn.Nickname = m.Nickname
 	if err := c.Connect(); err != nil {
-		return nil, err
-	} else {
-		fmt.Printf(c.String())
+		conn.Err = err
+		connRes <- conn
 	}
 
-	connMap[m.Nickname] = c
+	// just for debugging purposes
+	fmt.Printf(c.String())
+	conn.IrcConn = c
+	connMap[m.Nickname] = conn
 
-	return c, nil
+	connRes <- conn
+}
+
+func prepareErrResponse(err error) Response {
+	fmt.Printf("Error occurred: %s", err)
+	return Response{Success: false, Error: err}
+}
+
+func prepareConnection(m *Message, r render.Render) *Connection {
+	go connectClient(m)
+
+	select {
+	case conn := <-connRes:
+		if conn.Err != nil {
+			r.JSON(400, prepareErrResponse(conn.Err))
+			return nil
+		}
+		return conn
+	case <-time.After(CONN_TIMEOUT):
+		r.JSON(408, prepareErrResponse(errors.New("connection timeout")))
+		return nil
+	}
 }
 
 func sendMessage(_ martini.Params, m Message, r render.Render) {
-	conn, err := connect(&m)
-	if err != nil {
-		r.JSON(400, Response{Response: false, Error: err})
-		return
-	}
+	conn := prepareConnection(&m, r)
 
-	channel := fmt.Sprintf("#%s", m.Channel)
-	conn.Join(channel)
-
-	conn.Privmsg(channel, m.Body)
+	conn.sendMessage(&m)
 
 	r.JSON(200, Response{true, nil})
 }
