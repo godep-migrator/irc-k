@@ -13,7 +13,7 @@ var (
 	ErrBodyNotSet     = errors.New("body not set")
 	ErrChannelNotSet  = errors.New("channel not set")
 	ErrNicknameNotSet = errors.New("nickname not set")
-	ErrBadRequest     = errors.New("an error occurred")
+	ErrInternal       = errors.New("internal error")
 	ErrNotConnected   = errors.New("not connected")
 	quit              chan bool
 	connRes           chan error
@@ -70,7 +70,6 @@ func (c *Connection) SendMessage(m *Message) error {
 	if c.IrcConn == nil {
 		return ErrNotConnected
 	}
-
 	c.IrcConn.Join(channel)
 	c.IrcConn.Privmsg(channel, m.Body)
 
@@ -88,7 +87,7 @@ func (c *Connection) Connect(nickname string) error {
 	go func() {
 		if err := c.IrcConn.Connect(); err != nil {
 			fmt.Printf("an error occurred: %s \n", err)
-			connRes <- ErrBadRequest
+			connRes <- ErrInternal
 			return
 		}
 		// just for debugging purposes
