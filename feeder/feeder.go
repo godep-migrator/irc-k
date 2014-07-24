@@ -13,7 +13,14 @@ var (
 	ErrChannelNotSet     = errors.New("channel not set")
 	ErrNicknameNotSet    = errors.New("nickname not set")
 	ErrAlreadySubscribed = errors.New("already subscribed")
+	ErrChannelJoined     = errors.New("already joined")
 	redisConn            *redis.RedisSession
+)
+
+const (
+	USER_CHANNEL_KEY         = "user-channel"
+	NOTCONNECTED_CHANNEL_KEY = "notconnected-channel"
+	CONNECTED_CHANNEL_KEY    = "connected-channel"
 )
 
 type Channel struct {
@@ -79,7 +86,7 @@ func (c *Channel) validate() error {
 	return nil
 }
 
-func (c *Channel) join() error {
+func (c *Channel) Join() error {
 	if err := c.validate(); err != nil {
 		return err
 	}
@@ -91,7 +98,9 @@ func (c *Channel) join() error {
 	}
 
 	if err := c.addNewChannel(); err != nil {
-
+		if err == ErrChannelJoined {
+			return nil
+		}
 	}
 
 	return nil
@@ -111,9 +120,27 @@ func (c *Channel) addUserChannel() error {
 }
 
 func (c *Channel) addNewChannel() error {
+	reply, err := redisConn.IsSetMember(CONNECTED_CHANNEL_KEY, c.Name)
+	if err != nil {
+		return err
+	}
+
+	if reply == 1 {
+		return ErrChannelJoined
+	}
+
+	reply, err = redisConn.AddSetMembers(NOTCONNECTED_CHANNEL_KEY, c.Name)
+	if err != nil {
+		return err
+	}
+
+	if reply == 0 {
+		return ErrChannelJoined
+	}
+
 	return nil
 }
 
 func prepareUserChannelKey(nickname string) string {
-	return fmt.Sprintf("user-channel:%s", nickname)
+	return fmt.Sprintf("%s:%s", USER_CHANNEL_KEY, nickname)
 }

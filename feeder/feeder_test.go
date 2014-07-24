@@ -12,13 +12,13 @@ func NewChannel() *Channel {
 
 func TestUserJoinValidation(t *testing.T) {
 	c := new(Channel)
-	err := c.join()
+	err := c.Join()
 	if err != ErrChannelNotSet {
 		t.Error("channel name validation error")
 	}
 
 	c.Name = "canthefason-test"
-	err = c.join()
+	err = c.Join()
 	if err != ErrNicknameNotSet {
 		t.Error("nickname validation error")
 	}
@@ -33,34 +33,75 @@ func TestUserJoinedChannels(t *testing.T) {
 	}()
 
 	if err != nil {
-		t.Errorf("could not add channel: %s", err)
+		t.Errorf("Expected nil but got %s", err)
 		t.FailNow()
 	}
 
 	members, err := redisConn.GetSetMembers(key)
 	if err != nil {
-		t.Error("could not get channels")
+		t.Error("Expected nil but got %s")
 		t.FailNow()
 	}
 
 	if len(members) == 0 {
-		t.Error("could not get channels")
+		t.Error("Expected channel list with one channel but got empty list")
 		t.FailNow()
 	}
 
 	result, err := redisConn.String(members[0])
 	if err != nil {
-		t.Errorf("could not cast channel name to string: %s", err)
+		t.Errorf("Expected nil but got %s", err)
 		t.FailNow()
 	}
 
 	if result != "canthefason-test" {
-		t.Errorf("wrong channel name: %s", members[0])
+		t.Errorf("Expected %s but got %s", "canthefason-test", members[0])
 		t.FailNow()
 	}
 
 	err = c.addUserChannel()
 	if err != ErrAlreadySubscribed {
-		t.Error("trying to subscribe to an already joined channel")
+		t.Errorf("Expected %s error but got %s", ErrAlreadySubscribed, err)
 	}
+}
+
+func TestAddNewChannel(t *testing.T) {
+	c := NewChannel()
+	defer func() {
+		redisConn.Del(NOTCONNECTED_CHANNEL_KEY)
+	}()
+
+	err := c.addNewChannel()
+	if err != nil {
+		t.Errorf("Expected nil but got %s", err)
+		t.FailNow()
+	}
+
+	members, err := redisConn.GetSetMembers(NOTCONNECTED_CHANNEL_KEY)
+	if err != nil {
+		t.Errorf("Expected nil but got %s", err)
+		t.FailNow()
+	}
+
+	if len(members) == 0 {
+		t.Error("Expected channel list with one channel but got empty list")
+		t.FailNow()
+	}
+
+	result, err := redisConn.String(members[0])
+	if err != nil {
+		t.Errorf("Expected nil but got %s", err)
+		t.FailNow()
+	}
+
+	if result != "canthefason-test" {
+		t.Errorf("Expected %s but got %s", "canthefason-test", members[0])
+		t.FailNow()
+	}
+
+	err = c.addNewChannel()
+	if err != ErrChannelJoined {
+		t.Errorf("Expected %s error but got %s", ErrChannelJoined, err)
+	}
+
 }
