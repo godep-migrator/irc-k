@@ -36,6 +36,8 @@ func fail(r render.Render, err error) {
 	switch err {
 	case client.ErrTimeout:
 		status = 408
+	case client.ErrInternal:
+		status = 500
 	default:
 		status = 400
 	}
