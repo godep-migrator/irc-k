@@ -68,7 +68,7 @@ func TestUserJoinedChannels(t *testing.T) {
 func TestAddNewChannel(t *testing.T) {
 	c := NewChannel()
 	defer func() {
-		redisConn.Del(NOTCONNECTED_CHANNEL_KEY)
+		redisConn.Del(WAITING_CHANNEL_KEY)
 	}()
 
 	err := c.addNewChannel()
@@ -77,7 +77,7 @@ func TestAddNewChannel(t *testing.T) {
 		t.FailNow()
 	}
 
-	members, err := redisConn.GetSetMembers(NOTCONNECTED_CHANNEL_KEY)
+	members, err := redisConn.GetSetMembers(WAITING_CHANNEL_KEY)
 	if err != nil {
 		t.Errorf("Expected nil but got %s", err)
 		t.FailNow()

@@ -18,9 +18,9 @@ var (
 )
 
 const (
-	USER_CHANNEL_KEY         = "user-channel"
-	NOTCONNECTED_CHANNEL_KEY = "notconnected-channel"
-	CONNECTED_CHANNEL_KEY    = "connected-channel"
+	USER_CHANNEL_KEY      = "user-channel"
+	WAITING_CHANNEL_KEY   = "waiting-channel"
+	CONNECTED_CHANNEL_KEY = "connected-channel"
 )
 
 type Channel struct {
@@ -129,7 +129,7 @@ func (c *Channel) addNewChannel() error {
 		return ErrChannelJoined
 	}
 
-	reply, err = redisConn.AddSetMembers(NOTCONNECTED_CHANNEL_KEY, c.Name)
+	reply, err = redisConn.AddSetMembers(WAITING_CHANNEL_KEY, c.Name)
 	if err != nil {
 		return err
 	}
