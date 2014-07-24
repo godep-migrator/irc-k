@@ -25,7 +25,8 @@ const (
 
 type Connection struct {
 	Nickname string
-	IrcConn  *irc.Conn
+
+	ircConn *irc.Conn
 }
 
 func init() {
@@ -33,6 +34,7 @@ func init() {
 	quit = make(chan bool)
 }
 
+// TODO it is too much api related
 type Message struct {
 	Nickname  string    `json:"nickname" binding:"required"`
 	Body      string    `json:"body" binding:"required"`
@@ -67,11 +69,11 @@ func (c *Connection) SendMessage(m *Message) error {
 	}
 
 	channel := prepareChannel(m.Channel)
-	if c.IrcConn == nil {
+	if c.ircConn == nil {
 		return ErrNotConnected
 	}
-	c.IrcConn.Join(channel)
-	c.IrcConn.Privmsg(channel, m.Body)
+	c.ircConn.Join(channel)
+	c.ircConn.Privmsg(channel, m.Body)
 
 	return nil
 }
@@ -82,16 +84,16 @@ func (c *Connection) Connect(nickname string) error {
 	cfg.SSL = true
 	cfg.Server = "irc.freenode.net:7000" // TODO read it from a config file
 	cfg.NewNick = func(n string) string { return n + "^" }
-	c.IrcConn = irc.Client(cfg)
+	c.ircConn = irc.Client(cfg)
 
 	go func() {
-		if err := c.IrcConn.Connect(); err != nil {
+		if err := c.ircConn.Connect(); err != nil {
 			fmt.Printf("an error occurred: %s \n", err)
 			connRes <- ErrInternal
 			return
 		}
 		// just for debugging purposes
-		fmt.Printf(c.IrcConn.String())
+		fmt.Printf(c.ircConn.String())
 		connRes <- nil
 	}()
 
@@ -101,7 +103,7 @@ func (c *Connection) Connect(nickname string) error {
 			return err
 		}
 	case <-time.After(CONN_TIMEOUT):
-		c.IrcConn.Quit()
+		c.ircConn.Quit()
 		return ErrTimeout
 	}
 
