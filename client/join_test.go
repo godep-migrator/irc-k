@@ -1,4 +1,4 @@
-package feeder
+package client
 
 import "testing"
 
