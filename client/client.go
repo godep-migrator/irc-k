@@ -3,6 +3,7 @@ package client
 import (
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"github.com/canthefason/irc-k/config"
@@ -35,12 +36,10 @@ func init() {
 	quit = make(chan bool)
 }
 
-// TODO it is too much api related
 type Message struct {
-	Nickname  string    `json:"nickname" binding:"required"`
-	Body      string    `json:"body" binding:"required"`
-	Channel   string    `json:"channel" binding:"required"`
-	Timestamp time.Time `json:"timestamp"`
+	Nickname string
+	Body     string
+	Channel  string
 }
 
 func (m *Message) validate() error {
@@ -89,7 +88,7 @@ func (c *Connection) Connect(nickname string) error {
 
 	go func() {
 		if err := c.ircConn.Connect(); err != nil {
-			fmt.Printf("an error occurred: %s \n", err)
+			log.Printf("an error occurred: %s \n", err)
 			connRes <- ErrInternal
 			return
 		}

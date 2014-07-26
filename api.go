@@ -1,15 +1,20 @@
 package main
 
 import (
+	"errors"
+	"fmt"
+
 	"github.com/canthefason/irc-k/client"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
+	"gopkg.in/validator.v1"
 )
 
 var (
-	connMap map[string]*client.Connection
-	// channelMap map[string]map[string]struct{}
+	connMap    map[string]*client.Connection
+	ErrNotSet  = errors.New("not set")
+	ErrUnknown = errors.New("unknown error")
 )
 
 func init() {
@@ -20,20 +25,34 @@ func init() {
 func main() {
 	m := martini.Classic()
 	m.Use(render.Renderer())
-	m.Post("/sendMessage", binding.Json(client.Message{}), sendMessage)
+	m.Post("/sendMessage", binding.Json(MessageRequest{}), sendMessage)
 
 	m.Run()
 }
 
 type Response struct {
-	Success bool   `json:"response"`
-	Error   string `json:"error"`
+	Success bool     `json:"response"`
+	Errors  []string `json:"errors"`
 }
 
-func fail(r render.Render, err error) {
+func NewResponse(success bool, errors ...error) Response {
+	r := Response{Success: success, Errors: make([]string, 0)}
+	for _, error := range errors {
+		r.Errors = append(r.Errors, error.Error())
+	}
+
+	return r
+}
+
+func fail(r render.Render, errors ...error) {
 	var status int
 
-	switch err {
+	if len(errors) == 0 {
+		r.JSON(400, NewResponse(false, ErrUnknown))
+		return
+	}
+
+	switch errors[0] {
 	case client.ErrTimeout:
 		status = 408
 	case client.ErrInternal:
@@ -42,21 +61,69 @@ func fail(r render.Render, err error) {
 		status = 400
 	}
 
-	r.JSON(status, Response{Success: false, Error: err.Error()})
+	r.JSON(status, NewResponse(false, errors...))
 }
 
-func sendMessage(_ martini.Params, m client.Message, r render.Render) {
-	conn, err := Connect(m.Nickname)
+func success(r render.Render) {
+	r.JSON(200, NewResponse(true))
+}
+
+type MessageRequest struct {
+	Nickname string `json:"nickname"  binding:"required" validate:"nonzero" `
+	Body     string `json:"body" binding:"required" validate:"nonzero"`
+	Channel  string `json:"channel" binding:"required" validate:"nonzero"`
+}
+
+func (mr *MessageRequest) mapToMessage() *client.Message {
+	m := new(client.Message)
+	m.Nickname = mr.Nickname
+	m.Body = mr.Body
+	m.Channel = mr.Channel
+
+	return m
+}
+
+func mapValidatorError(err error) error {
+	switch err {
+	case validator.ErrZeroValue:
+		return ErrNotSet
+	default:
+		return ErrUnknown
+	}
+}
+
+func parseValidatorErrors(errs map[string][]error) []error {
+	errors := make([]error, 0, len(errs))
+	for key, fieldErrs := range errs {
+		for _, err := range fieldErrs {
+			errors = append(errors, fmt.Errorf("%s %s", key, mapValidatorError(err)))
+		}
+	}
+
+	return errors
+}
+
+func sendMessage(_ martini.Params, mr MessageRequest, r render.Render) {
+	valid, errs := validator.Validate(mr)
+	if !valid {
+		errors := parseValidatorErrors(errs)
+		fail(r, errors...)
+		return
+	}
+
+	conn, err := Connect(mr.Nickname)
 	if err != nil {
 		fail(r, err)
 		return
 	}
 
-	if err := conn.SendMessage(&m); err != nil {
+	m := mr.mapToMessage()
+	if err := conn.SendMessage(m); err != nil {
 		fail(r, err)
+		return
 	}
 
-	r.JSON(200, Response{true, ""})
+	success(r)
 }
 
 func Connect(nickname string) (*client.Connection, error) {
