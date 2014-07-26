@@ -10,8 +10,6 @@ import (
 )
 
 var (
-	ErrChannelNotSet     = errors.New("channel not set")
-	ErrNicknameNotSet    = errors.New("nickname not set")
 	ErrAlreadySubscribed = errors.New("already subscribed")
 	ErrChannelJoined     = errors.New("already joined")
 	redisConn            *redis.RedisSession
@@ -24,8 +22,8 @@ const (
 )
 
 type Channel struct {
-	Name     string `json:"name"`
-	Nickname string `json:"nickname"`
+	Name     string
+	Nickname string
 }
 
 func init() {

@@ -26,6 +26,7 @@ func main() {
 	m := martini.Classic()
 	m.Use(render.Renderer())
 	m.Post("/sendMessage", binding.Json(MessageRequest{}), sendMessage)
+	m.Post("/join", binding.Json(ChannelRequest{}), join)
 
 	m.Run()
 }
@@ -74,6 +75,11 @@ type MessageRequest struct {
 	Channel  string `json:"channel" binding:"required" validate:"nonzero"`
 }
 
+type ChannelRequest struct {
+	Name     string `json:"name" binding:"required" validate:"nonzero"`
+	Nickname string `json:"nickname" binding:"required" validate:"nonzero"`
+}
+
 func (mr *MessageRequest) mapToMessage() *client.Message {
 	m := new(client.Message)
 	m.Nickname = mr.Nickname
@@ -81,6 +87,14 @@ func (mr *MessageRequest) mapToMessage() *client.Message {
 	m.Channel = mr.Channel
 
 	return m
+}
+
+func (cr *ChannelRequest) mapToChannel() *client.Channel {
+	c := new(client.Channel)
+	c.Nickname = cr.Nickname
+	c.Name = cr.Name
+
+	return c
 }
 
 func mapValidatorError(err error) error {
@@ -121,6 +135,22 @@ func sendMessage(_ martini.Params, mr MessageRequest, r render.Render) {
 	if err := conn.SendMessage(m); err != nil {
 		fail(r, err)
 		return
+	}
+
+	success(r)
+}
+
+func join(_ martini.Params, cr ChannelRequest, r render.Render) {
+	valid, errs := validator.Validate(cr)
+	if !valid {
+		errors := parseValidatorErrors(errs)
+		fail(r, errors...)
+		return
+	}
+
+	c := cr.mapToChannel()
+	if err := c.Join(); err != nil {
+		fail(r, err)
 	}
 
 	success(r)
