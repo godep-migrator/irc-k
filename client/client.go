@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/canthefason/irc-k/config"
 	irc "github.com/fluffle/goirc/client"
 )
 
@@ -82,7 +83,7 @@ func (c *Connection) Connect(nickname string) error {
 
 	cfg := irc.NewConfig(nickname)
 	cfg.SSL = true
-	cfg.Server = "irc.freenode.net:7000" // TODO read it from a config file
+	cfg.Server = config.Conf.IRC.Server
 	cfg.NewNick = func(n string) string { return n + "^" }
 	c.ircConn = irc.Client(cfg)
 

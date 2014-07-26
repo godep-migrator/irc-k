@@ -3,6 +3,10 @@
 	"GoVersion": "go1.3",
 	"Deps": [
 		{
+			"ImportPath": "code.google.com/p/gcfg",
+			"Rev": "c2d3050044d05357eaf6c3547249ba57c5e235cb"
+		},
+		{
 			"ImportPath": "code.google.com/p/gomock/gomock",
 			"Rev": "5d0b59c9f277f888d2c70b00908236a30ab90f45"
 		},

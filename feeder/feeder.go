@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/canthefason/irc-k/client"
+	"github.com/canthefason/irc-k/config"
 	"github.com/koding/redis"
 )
 
@@ -34,8 +35,8 @@ func init() {
 
 func initRedisConn() error {
 	var err error
-	// TODO add redis settings to config file
-	redisConn, err = redis.NewRedisSession(&redis.RedisConf{Server: "localhost:6379", DB: 3})
+	redisConf := config.Conf.Redis
+	redisConn, err = redis.NewRedisSession(&redis.RedisConf{Server: redisConf.Server, DB: redisConf.DB})
 	if err != nil {
 		log.Fatal("Could not connect to redis: %s", err)
 	}
@@ -47,8 +48,7 @@ func initRedisConn() error {
 
 func run() {
 	conn := new(client.Connection)
-	// TODO config file
-	if err := conn.Connect("koding-bot"); err != nil {
+	if err := conn.Connect(config.Conf.IRC.BotName); err != nil {
 		log.Fatal("Error occurred in initialization: %s", err)
 	}
 }
