@@ -14,6 +14,7 @@ type Config struct {
 	Redis struct {
 		Server string
 		DB     int
+		Prefix string
 	}
 }
 

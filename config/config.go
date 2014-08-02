@@ -7,5 +7,6 @@ BotName = koding-bot
 
 [redis]
 Server = localhost:6379
-DB     = 0
+DB     = 3
+Prefix = irc-k
 `
