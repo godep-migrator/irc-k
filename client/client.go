@@ -47,10 +47,6 @@ func (m *Message) validate() error {
 		return ErrBodyNotSet
 	}
 
-	if m.Channel == "" {
-		return ErrChannelNotSet
-	}
-
 	if m.Nickname == "" {
 		return ErrNicknameNotSet
 	}
@@ -68,12 +64,11 @@ func (c *Connection) SendMessage(m *Message) error {
 		return err
 	}
 
-	channel := prepareChannel(m.Channel)
-	if c.ircConn == nil {
-		return ErrNotConnected
+	if err := c.Join(m.Channel); err != nil {
+		return err
 	}
-	c.ircConn.Join(channel)
-	c.ircConn.Privmsg(channel, m.Body)
+
+	c.ircConn.Privmsg(m.Channel, m.Body)
 
 	return nil
 }
@@ -106,6 +101,21 @@ func (c *Connection) Connect(nickname string) error {
 		c.ircConn.Quit()
 		return ErrTimeout
 	}
+
+	return nil
+}
+
+func (c *Connection) Join(channelName string) error {
+	if channelName == "" {
+		return ErrChannelNotSet
+	}
+
+	channel := prepareChannel(channelName)
+	if c.ircConn == nil {
+		return ErrNotConnected
+	}
+
+	c.ircConn.Join(channel)
 
 	return nil
 }
