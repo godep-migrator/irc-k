@@ -3,9 +3,8 @@ package client
 import (
 	"errors"
 	"fmt"
-	"log"
 
-	"github.com/canthefason/irc-k/config"
+	"github.com/canthefason/irc-k/common"
 	"github.com/koding/redis"
 )
 
@@ -16,9 +15,7 @@ var (
 )
 
 const (
-	USER_CHANNEL_KEY      = "user-channel"
-	WAITING_CHANNEL_KEY   = "waiting-channel"
-	CONNECTED_CHANNEL_KEY = "connected-channel"
+	USER_CHANNEL_KEY = "user-channel"
 )
 
 type Channel struct {
@@ -27,20 +24,7 @@ type Channel struct {
 }
 
 func init() {
-	initRedisConn()
-}
-
-func initRedisConn() error {
-	var err error
-	redisConf := config.Conf.Redis
-	redisConn, err = redis.NewRedisSession(&redis.RedisConf{Server: redisConf.Server, DB: redisConf.DB})
-	if err != nil {
-		log.Fatal("Could not connect to redis: %s", err)
-	}
-
-	redisConn.SetPrefix("irc-k")
-
-	return nil
+	redisConn = common.MustGetRedis()
 }
 
 func (c *Channel) validate() error {
@@ -89,7 +73,7 @@ func (c *Channel) addUserChannel() error {
 }
 
 func (c *Channel) addNewChannel() error {
-	reply, err := redisConn.IsSetMember(CONNECTED_CHANNEL_KEY, c.Name)
+	reply, err := redisConn.IsSetMember(common.CONNECTED_CHANNEL_KEY, c.Name)
 	if err != nil {
 		return err
 	}
@@ -98,7 +82,7 @@ func (c *Channel) addNewChannel() error {
 		return ErrChannelJoined
 	}
 
-	reply, err = redisConn.AddSetMembers(WAITING_CHANNEL_KEY, c.Name)
+	reply, err = redisConn.AddSetMembers(common.WAITING_CHANNEL_KEY, c.Name)
 	if err != nil {
 		return err
 	}
