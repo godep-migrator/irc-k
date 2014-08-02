@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	connMap    map[string]*client.Connection
 	ErrNotSet  = errors.New("not set")
 	ErrUnknown = errors.New("unknown error")
 )
