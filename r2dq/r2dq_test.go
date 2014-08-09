@@ -123,3 +123,27 @@ func TestAck(t *testing.T) {
 		t.Errorf("Expected %d but got %d", 0, length.Val())
 	}
 }
+
+func TestGracefulShutdown(t *testing.T) {
+	q := NewQueue()
+	defer tearDown(q)
+
+	q.Queue("drteeth")
+	q.Queue("floyd")
+
+	q.Dequeue()
+	q.Dequeue()
+
+	q.gracefulShutdown()
+
+	length := redisConn.LLen(q.procQueueKey())
+	if length.Val() != 0 {
+		t.Errorf("Expected %d but got %d", 0, length.Val())
+	}
+
+	length = redisConn.LLen(q.waitingQueueKey())
+	if length.Val() != 2 {
+		t.Errorf("Expected %d but got %d", 2, length.Val())
+	}
+
+}
