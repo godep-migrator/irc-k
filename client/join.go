@@ -93,9 +93,13 @@ func (c *Channel) addNewChannel() error {
 		return nil
 	}
 
+	if err := common.MustGetQueue().Queue(c.Name); err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func prepareUserChannelKey(nickname string) string {
-	return fmt.Sprintf("%s:%s", USER_CHANNEL_KEY, nickname)
+	return fmt.Sprintf("%s:%s:%s", common.PREFIX, USER_CHANNEL_KEY, nickname)
 }
