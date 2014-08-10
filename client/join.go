@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/canthefason/irc-k/common"
-	"github.com/koding/redis"
+	"gopkg.in/redis.v2"
 )
 
 var (
 	ErrAlreadySubscribed = errors.New("already subscribed")
 	ErrChannelJoined     = errors.New("already joined")
-	redisConn            *redis.RedisSession
+	redisConn            *redis.Client
 )
 
 const (
@@ -60,12 +60,12 @@ func (c *Channel) Join() error {
 }
 
 func (c *Channel) addUserChannel() error {
-	reply, err := redisConn.AddSetMembers(prepareUserChannelKey(c.Nickname), c.Name)
-	if err != nil {
-		return err
+	res := redisConn.SAdd(prepareUserChannelKey(c.Nickname), c.Name)
+	if res.Err() != nil {
+		return res.Err()
 	}
 
-	if reply == 0 {
+	if res.Val() == 0 {
 		return ErrAlreadySubscribed
 	}
 
@@ -73,22 +73,24 @@ func (c *Channel) addUserChannel() error {
 }
 
 func (c *Channel) addNewChannel() error {
-	reply, err := redisConn.IsSetMember(common.CONNECTED_CHANNEL_KEY, c.Name)
-	if err != nil {
-		return err
+	// add channel to members channels
+	res := redisConn.SAdd(prepareUserChannelKey(c.Nickname), c.Name)
+	if res.Err() != nil {
+		return res.Err()
 	}
 
-	if reply == 1 {
+	if res.Val() == 0 {
 		return ErrChannelJoined
 	}
 
-	reply, err = redisConn.AddSetMembers(common.WAITING_CHANNEL_KEY, c.Name)
-	if err != nil {
-		return err
+	// add channel to global channels
+	response := redisConn.SAdd(common.KeyWithPrefix(common.REQ_CHANNELS_KEY), c.Name)
+	if response.Err() != nil {
+		return res.Err()
 	}
 
-	if reply == 0 {
-		return ErrChannelJoined
+	if response.Val() == 0 {
+		return nil
 	}
 
 	return nil
