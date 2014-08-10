@@ -13,6 +13,7 @@ type Config struct {
 	}
 	Redis struct {
 		Server string
+		Port   string
 		DB     int
 		Prefix string
 	}

@@ -6,7 +6,8 @@ Server  = irc.freenode.net:7000
 BotName = koding-bot
 
 [redis]
-Server = localhost:6379
+Server = localhost
+Port   = 6379
 DB     = 3
 Prefix = irc-k
 `
