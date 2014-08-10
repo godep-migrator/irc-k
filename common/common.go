@@ -1,23 +1,26 @@
 package common
 
 import (
+	"fmt"
 
 	"github.com/canthefason/irc-k/config"
+	"github.com/canthefason/r2dq"
 	"gopkg.in/redis.v2"
 )
 
 const (
-	WAITING_CHANNEL_KEY   = "waiting-channel"
-	FAILED_CHANNEL_KEY    = "failed-channel"
-	CONNECTED_CHANNEL_KEY = "connected-channel"
+	REQ_CHANNELS_KEY = "requested-channels"
+	PREFIX           = "irc-k"
 )
 
 var (
 	redisConn    *redis.Client
+	waitingQueue *r2dq.Queue
 )
 
 func init() {
 	MustInitRedis()
+	MustInitQueue()
 }
 
 func MustInitRedis() {
@@ -33,8 +36,21 @@ func MustGetRedis() *redis.Client {
 	return redisConn
 }
 
+func MustInitQueue() {
+	redisConf := config.Conf.Redis
+	redisAddr := fmt.Sprintf("%s:%s", redisConf.Server, redisConf.Port)
+	waitingQueue = r2dq.NewQueue(redisAddr, redisConf.DB, PREFIX)
+}
+
+func MustGetQueue() *r2dq.Queue {
+	return waitingQueue
+}
 
 func Close() {
 	redisConn.Close()
+	waitingQueue.Close()
 }
+
+func KeyWithPrefix(key string) string {
+	return fmt.Sprintf("%s:%s", PREFIX, key)
 }
