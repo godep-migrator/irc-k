@@ -41,24 +41,19 @@ func TestUserJoinedChannels(t *testing.T) {
 		t.FailNow()
 	}
 
-	members, err := redisConn.GetSetMembers(key)
-	if err != nil {
-		t.Error("Expected nil but got %s")
+	res := redisConn.SMembers(key)
+	if res.Err() != nil {
+		t.Error("Expected nil but got %s", res.Err())
 		t.FailNow()
 	}
 
+	members := res.Val()
 	if len(members) == 0 {
 		t.Error("Expected channel list with one channel but got empty list")
 		t.FailNow()
 	}
 
-	result, err := redisConn.String(members[0])
-	if err != nil {
-		t.Errorf("Expected nil but got %s", err)
-		t.FailNow()
-	}
-
-	if result != "canthefason-test" {
+	if members[0] != "canthefason-test" {
 		t.Errorf("Expected %s but got %s", "canthefason-test", members[0])
 		t.FailNow()
 	}
@@ -72,7 +67,9 @@ func TestUserJoinedChannels(t *testing.T) {
 func TestAddNewChannel(t *testing.T) {
 	c := NewChannel()
 	defer func() {
-		redisConn.Del(common.WAITING_CHANNEL_KEY)
+		redisConn.Del(common.KeyWithPrefix(common.REQ_CHANNELS_KEY))
+		redisConn.Del(prepareUserChannelKey("canthefason"))
+		common.Close()
 	}()
 
 	err := c.addNewChannel()
@@ -81,25 +78,14 @@ func TestAddNewChannel(t *testing.T) {
 		t.FailNow()
 	}
 
-	members, err := redisConn.GetSetMembers(common.WAITING_CHANNEL_KEY)
+	pkg, err := common.MustGetQueue().Dequeue()
 	if err != nil {
 		t.Errorf("Expected nil but got %s", err)
 		t.FailNow()
 	}
 
-	if len(members) == 0 {
-		t.Error("Expected channel list with one channel but got empty list")
-		t.FailNow()
-	}
-
-	result, err := redisConn.String(members[0])
-	if err != nil {
-		t.Errorf("Expected nil but got %s", err)
-		t.FailNow()
-	}
-
-	if result != "canthefason-test" {
-		t.Errorf("Expected %s but got %s", "canthefason-test", members[0])
+	if pkg != "canthefason-test" {
+		t.Errorf("Expected %s but got %s", "canthefason-test", pkg)
 		t.FailNow()
 	}
 
