@@ -33,7 +33,7 @@ func (c *Channel) validate() error {
 	}
 
 	if c.Nickname == "" {
-		return ErrNicknameNotSet
+		return common.ErrNicknameNotSet
 	}
 
 	return nil

@@ -12,9 +12,7 @@ import (
 
 var (
 	ErrTimeout        = errors.New("connection timeout")
-	ErrBodyNotSet     = errors.New("body not set")
 	ErrChannelNotSet  = errors.New("channel not set")
-	ErrNicknameNotSet = errors.New("nickname not set")
 	ErrInternal       = errors.New("internal error")
 	ErrNotConnected   = errors.New("not connected")
 	quit              chan bool
@@ -36,31 +34,13 @@ func init() {
 	quit = make(chan bool)
 }
 
-type Message struct {
-	Nickname string
-	Body     string
-	Channel  string
-}
-
-func (m *Message) validate() error {
-	if m.Body == "" {
-		return ErrBodyNotSet
-	}
-
-	if m.Nickname == "" {
-		return ErrNicknameNotSet
-	}
-
-	return nil
-}
-
 // prepareChannel appends # sign to channel name
 func prepareChannel(channel string) string {
 	return fmt.Sprintf("#%s", channel)
 }
 
-func (c *Connection) SendMessage(m *Message) error {
-	if err := m.validate(); err != nil {
+func (c *Connection) SendMessage(m *common.Message) error {
+	if err := m.Validate(); err != nil {
 		return err
 	}
 

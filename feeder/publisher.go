@@ -1,14 +1,12 @@
 package feeder
 
-import "encoding/json"
+import (
+	"encoding/json"
 
-type Message struct {
-	Body     string `json:"body"`
-	Nickname string `json:"nickname"`
-	Channel  string `json:"-"`
-}
+	"github.com/canthefason/irc-k/common"
+)
 
-func Send(m Message) error {
+func Send(m common.Message) error {
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err

@@ -23,7 +23,7 @@ func TestUserJoinValidation(t *testing.T) {
 
 	c.Name = "canthefason-test"
 	err = c.Join()
-	if err != ErrNicknameNotSet {
+	if err != common.ErrNicknameNotSet {
 		t.Error("nickname validation error")
 	}
 }

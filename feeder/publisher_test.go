@@ -39,7 +39,7 @@ func TestMessagePublish(t *testing.T) {
 
 	}()
 
-	m := Message{}
+	m := common.Message{}
 	m.Body = "can you picture that?"
 	m.Channel = "electric-mayhem"
 	m.Nickname = "kermit"
@@ -51,7 +51,7 @@ func TestMessagePublish(t *testing.T) {
 
 	select {
 	case res := <-done:
-		rm := new(Message)
+		rm := new(common.Message)
 		err := json.Unmarshal([]byte(res.Payload), &rm)
 		if err != nil {
 			t.Errorf("Expected nil but got %s", err)
