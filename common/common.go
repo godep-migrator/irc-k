@@ -24,8 +24,12 @@ func init() {
 }
 
 func MustInitRedis() {
+	redisConn = ConnRedis()
+}
+
+func ConnRedis() *redis.Client {
 	redisConf := config.Conf.Redis
-	redisConn = redis.NewTCPClient(&redis.Options{
+	return redis.NewTCPClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", redisConf.Server, redisConf.Port),
 		Password: "",
 		DB:       int64(redisConf.DB),
