@@ -11,6 +11,10 @@
 			"Rev": "5d0b59c9f277f888d2c70b00908236a30ab90f45"
 		},
 		{
+			"ImportPath": "github.com/canthefason/r2dq",
+			"Rev": "db016b5c6c492e200922a5adc60080dfe7f45fe2"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/inject",
 			"Comment": "v1.0-rc1-4-g4b81725",
 			"Rev": "4b8172520a03fa190f427bbd284db01b459bfce7"
@@ -33,6 +37,10 @@
 			"Rev": "6d22115736ff94392c11684f7cbe1a5143430ee3"
 		},
 		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "d1c4472bf2efd3826f2b5bdcc02d8416798d678c"
+		},
+		{
 			"ImportPath": "github.com/martini-contrib/binding",
 			"Rev": "f1fd5e76dcbcc36a4ff22a3e29dafe17c3e62700"
 		},
@@ -43,6 +51,16 @@
 		{
 			"ImportPath": "github.com/oxtoacart/bpool",
 			"Rev": "0f78ff9152c03745d1a47c9023af1b424e202c07"
+		},
+		{
+			"ImportPath": "gopkg.in/bufio.v1",
+			"Comment": "v1",
+			"Rev": "567b2bfa514e796916c4747494d6ff5132a1dfce"
+		},
+		{
+			"ImportPath": "gopkg.in/redis.v2",
+			"Comment": "v2",
+			"Rev": "ffe62d60e2dac87af57a6726ed01c82616abb929"
 		},
 		{
 			"ImportPath": "gopkg.in/validator.v1",
