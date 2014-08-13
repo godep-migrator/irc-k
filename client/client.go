@@ -6,17 +6,18 @@ import (
 	"log"
 	"time"
 
+	"github.com/canthefason/irc-k/common"
 	"github.com/canthefason/irc-k/config"
 	irc "github.com/fluffle/goirc/client"
 )
 
 var (
-	ErrTimeout        = errors.New("connection timeout")
-	ErrChannelNotSet  = errors.New("channel not set")
-	ErrInternal       = errors.New("internal error")
-	ErrNotConnected   = errors.New("not connected")
-	quit              chan bool
-	connRes           chan error
+	ErrTimeout       = errors.New("connection timeout")
+	ErrChannelNotSet = errors.New("channel not set")
+	ErrInternal      = errors.New("internal error")
+	ErrNotConnected  = errors.New("not connected")
+	quit             chan bool
+	connRes          chan error
 )
 
 const (
@@ -25,6 +26,7 @@ const (
 
 type Connection struct {
 	Nickname string
+	MsgChan  chan common.Message
 
 	ircConn *irc.Conn
 }
@@ -82,6 +84,8 @@ func (c *Connection) Connect(nickname string) error {
 		return ErrTimeout
 	}
 
+	c.registerHandlers()
+
 	return nil
 }
 
@@ -100,18 +104,25 @@ func (c *Connection) Join(channelName string) error {
 	return nil
 }
 
-func registerHandlers(c *irc.Conn) {
-	c.HandleFunc("connected",
+func (c *Connection) registerHandlers() {
+	c.MsgChan = make(chan common.Message, 0)
+	c.ircConn.HandleFunc("connected",
 		func(conn *irc.Conn, line *irc.Line) {
 			// connected
 		})
 
-	c.HandleFunc("disconnected",
+	c.ircConn.HandleFunc("disconnected",
 		func(conn *irc.Conn, line *irc.Line) { quit <- true })
 
-	c.HandleFunc("privmsg",
+	c.ircConn.HandleFunc("privmsg",
 		func(conn *irc.Conn, line *irc.Line) {
-			fmt.Printf("%s : %+v \n", line.Nick, line.Args[1])
+
+			m := common.Message{
+				Nickname: line.Nick,
+				Body:     line.Args[1],
+			}
+
+			c.MsgChan <- m
 		},
 	)
 }
