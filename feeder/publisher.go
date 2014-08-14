@@ -12,7 +12,7 @@ func Send(m common.Message) error {
 		return err
 	}
 
-	res := redisConn.Publish(m.Channel, string(data))
+	res := redisConn.Publish(common.KeyWithPrefix(m.Channel), string(data))
 
 	return res.Err()
 }

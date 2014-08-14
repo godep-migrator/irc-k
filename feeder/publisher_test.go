@@ -18,7 +18,7 @@ func TestMessagePublish(t *testing.T) {
 	quit := make(chan struct{}, 1)
 
 	ps := redisSubConn.PubSub()
-	if err := ps.Subscribe("electric-mayhem"); err != nil {
+	if err := ps.Subscribe(common.KeyWithPrefix("electric-mayhem")); err != nil {
 		t.Errorf("Expected nil but got %s", err)
 	}
 
