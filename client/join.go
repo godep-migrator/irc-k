@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 
 	"github.com/canthefason/irc-k/common"
@@ -9,8 +8,6 @@ import (
 )
 
 var (
-	ErrAlreadySubscribed = errors.New("already subscribed")
-	ErrChannelJoined     = errors.New("already joined")
 	redisConn            *redis.Client
 )
 

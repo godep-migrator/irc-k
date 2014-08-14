@@ -1,7 +1,6 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"time"
@@ -12,12 +11,8 @@ import (
 )
 
 var (
-	ErrTimeout       = errors.New("connection timeout")
-	ErrChannelNotSet = errors.New("channel not set")
-	ErrInternal      = errors.New("internal error")
-	ErrNotConnected  = errors.New("not connected")
-	quit             chan bool
-	connRes          chan error
+	quit    chan bool
+	connRes chan error
 )
 
 const (
