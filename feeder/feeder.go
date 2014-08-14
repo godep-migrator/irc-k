@@ -40,7 +40,7 @@ func initialize() {
 // 4. server - channel messages
 func Run() {
 	connect()
-	defer close()
+	defer Close()
 
 	go func() {
 		for {
@@ -55,7 +55,7 @@ func Run() {
 
 // close iterates over connected channels and adds them to waiting channel list
 // for further connections
-func close() {
+func Close() {
 	go redisConn.Close()
 	go func() {
 		defer queue.Close()
