@@ -2,6 +2,7 @@ package client
 
 import (
 	"testing"
+	"time"
 
 	"github.com/canthefason/irc-k/common"
 )
@@ -13,13 +14,13 @@ func tearDown(s *Subscriber) {
 	}()
 	go func() {
 		common.MustGetQueue().Purge()
-		common.Close()
+		// common.Close()
 	}()
 }
 
 func TestUserSubscribeValidation(t *testing.T) {
 	s := NewSubscriber()
-	defer s.Close()
+	defer tearDown(s)
 
 	err := s.Subscribe("")
 	if err != ErrChannelNotSet {
@@ -62,3 +63,45 @@ func TestRemovePrefix(t *testing.T) {
 	}
 }
 
+func TestListenChannel(t *testing.T) {
+	s := NewSubscriber()
+	if err := s.Subscribe("muppet-kitchen"); err != nil {
+		t.Errorf("Expected nil but got %s", err)
+	}
+	go s.Listen()
+
+	defer tearDown(s)
+	completed := make(chan struct{}, 1)
+
+	m := common.Message{}
+	m.Nickname = "swedishchef"
+	m.Body = "dudupdudup"
+	m.Channel = "muppet-kitchen"
+
+	go func() {
+		msg := <-s.msg
+		if msg.Nickname != m.Nickname {
+			t.Errorf("Expected %s as nickname but got %s", m.Nickname, msg.Nickname)
+		}
+
+		if msg.Body != m.Body {
+			t.Errorf("Expected %s as body but got %s", m.Body, msg.Body)
+		}
+
+		if msg.Channel != m.Channel {
+			t.Errorf("Expected %s as channel but got %s", m.Channel, msg.Channel)
+		}
+
+		completed <- struct{}{}
+	}()
+
+	if err := common.Send(m); err != nil {
+		t.Error("Expected nil but got %s", err)
+	}
+
+	select {
+	case <-completed:
+	case <-time.After(time.Second * 2):
+		t.Error("Expected message but connection timeout")
+	}
+}

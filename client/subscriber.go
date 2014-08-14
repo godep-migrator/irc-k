@@ -1,17 +1,25 @@
 package client
 
 import (
+	"encoding/json"
+	"log"
+	"strings"
+
 	"github.com/canthefason/irc-k/common"
 	"gopkg.in/redis.v2"
 )
 
 type Subscriber struct {
 	redisConn *redis.Client
+	msg       chan common.Message
+	ps        *redis.PubSub
 }
 
 func NewSubscriber() *Subscriber {
 	s := new(Subscriber)
 	s.redisConn = common.NewRedis()
+	s.msg = make(chan common.Message, 0)
+	s.ps = s.redisConn.PubSub()
 
 	return s
 }
@@ -22,7 +30,7 @@ func (s *Subscriber) Subscribe(channel string) error {
 	}
 
 	// add channel to members channels
-	err := s.redisConn.PubSub().Subscribe(common.KeyWithPrefix(channel))
+	err := s.ps.Subscribe(common.KeyWithPrefix(channel))
 	if err != nil {
 		return err
 	}
@@ -42,6 +50,29 @@ func (s *Subscriber) Subscribe(channel string) error {
 	}
 
 	return nil
+}
+
+func (s *Subscriber) Listen() error {
+	for {
+		res, err := s.ps.Receive()
+		if err != nil {
+			panic(err)
+		}
+
+		switch res.(type) {
+		case *redis.Message:
+			rm := res.(*redis.Message)
+			msg := common.Message{}
+			err := json.Unmarshal([]byte(rm.Payload), &msg)
+			if err != nil {
+				log.Printf("Could not unmarshal received message: %s", err)
+				continue
+			}
+			msg.Channel = removePrefix(rm.Channel)
+			s.msg <- msg
+		}
+
+	}
 }
 
 func (s *Subscriber) Close() error {
