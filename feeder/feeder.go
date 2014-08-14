@@ -95,6 +95,8 @@ func connectToChannel() {
 		return
 	}
 
+	go handleMessages(conn)
+
 	channels = append(channels, channel)
 	queue.Ack(channel)
 }
@@ -106,4 +108,19 @@ func prepareBotName() string {
 	}
 
 	return fmt.Sprintf("%s-%d", config.Conf.IRC.BotName, res.Val())
+}
+
+func handleMessages(conn *client.Connection) {
+	for {
+		select {
+		case m := <-conn.MsgChan:
+			if err := Send(m); err != nil {
+				log.Printf("An error occurred while sending message: %s", err)
+			}
+		case <-quit:
+			return
+		}
+
+	}
+
 }
