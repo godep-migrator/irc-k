@@ -22,6 +22,7 @@ var (
 	quit           chan os.Signal
 	channels       []string
 	queue          *r2dq.Queue
+	botName        string
 )
 
 const BOT_COUNT = "botcount"
@@ -74,7 +75,7 @@ func gracefulShutdown() {
 func connect() {
 	initialize()
 	conn = new(client.Connection)
-	botName := prepareBotName()
+	botName = prepareBotName()
 
 	if err := conn.Connect(botName); err != nil {
 		panic(err)
@@ -94,6 +95,8 @@ func connectToChannel() {
 		queue.NAck(channel)
 		return
 	}
+
+	log.Printf("%s connected to channel: %s", botName, channel)
 
 	go handleMessages(conn)
 
