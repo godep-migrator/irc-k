@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/canthefason/irc-k/config"
@@ -57,4 +58,15 @@ func Close() {
 
 func KeyWithPrefix(key string) string {
 	return fmt.Sprintf("%s:%s", PREFIX, key)
+}
+
+func Send(m Message) error {
+	data, err := json.Marshal(m)
+	if err != nil {
+		return err
+	}
+
+	res := redisConn.Publish(KeyWithPrefix(m.Channel), string(data))
+
+	return res.Err()
 }

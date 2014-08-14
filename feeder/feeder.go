@@ -114,7 +114,7 @@ func handleMessages(conn *client.Connection) {
 	for {
 		select {
 		case m := <-conn.MsgChan:
-			if err := Send(m); err != nil {
+			if err := common.Send(m); err != nil {
 				log.Printf("An error occurred while sending message: %s", err)
 			}
 		case <-quit:

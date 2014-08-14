@@ -1,24 +1,26 @@
-package feeder
+package common
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/canthefason/irc-k/common"
 	"gopkg.in/redis.v2"
 )
 
+func tearDown() {
+	MustGetQueue().Purge()
+}
+
 func TestMessagePublish(t *testing.T) {
-	tearUp()
 	defer tearDown()
-	redisSubConn := common.NewRedis()
+	redisSubConn := NewRedis()
 
 	done := make(chan *redis.Message, 1)
 	quit := make(chan struct{}, 1)
 
 	ps := redisSubConn.PubSub()
-	if err := ps.Subscribe(common.KeyWithPrefix("electric-mayhem")); err != nil {
+	if err := ps.Subscribe(KeyWithPrefix("electric-mayhem")); err != nil {
 		t.Errorf("Expected nil but got %s", err)
 	}
 
@@ -39,7 +41,7 @@ func TestMessagePublish(t *testing.T) {
 
 	}()
 
-	m := common.Message{}
+	m := Message{}
 	m.Body = "can you picture that?"
 	m.Channel = "electric-mayhem"
 	m.Nickname = "kermit"
@@ -51,7 +53,7 @@ func TestMessagePublish(t *testing.T) {
 
 	select {
 	case res := <-done:
-		rm := new(common.Message)
+		rm := new(Message)
 		err := json.Unmarshal([]byte(res.Payload), &rm)
 		if err != nil {
 			t.Errorf("Expected nil but got %s", err)
