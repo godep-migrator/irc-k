@@ -12,7 +12,7 @@ import (
 func TestMessagePublish(t *testing.T) {
 	tearUp()
 	defer tearDown()
-	redisSubConn := common.ConnRedis()
+	redisSubConn := common.NewRedis()
 
 	done := make(chan *redis.Message, 1)
 	quit := make(chan struct{}, 1)
