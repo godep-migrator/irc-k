@@ -47,3 +47,7 @@ func (s *Subscriber) Subscribe(channel string) error {
 func (s *Subscriber) Close() error {
 	return s.redisConn.Close()
 }
+
+func removePrefix(channel string) string {
+	return strings.Replace(channel, common.PREFIX+":", "", 1)
+}

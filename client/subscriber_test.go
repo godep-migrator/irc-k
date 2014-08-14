@@ -53,3 +53,12 @@ func TestAddNewChannel(t *testing.T) {
 		t.FailNow()
 	}
 }
+
+func TestRemovePrefix(t *testing.T) {
+	channelName := common.KeyWithPrefix("labs")
+	c := removePrefix(channelName)
+	if "labs" != c {
+		t.Errorf("Expected %s but got %s", "labs", c)
+	}
+}
+
