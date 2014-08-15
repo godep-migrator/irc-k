@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/canthefason/irc-k/config"
@@ -15,8 +16,9 @@ const (
 )
 
 var (
-	redisConn    *redis.Client
-	waitingQueue *r2dq.Queue
+	redisConn        *redis.Client
+	waitingQueue     *r2dq.Queue
+	ErrChannelNotSet = errors.New("channel not set")
 )
 
 func init() {
@@ -64,6 +66,10 @@ func Send(m Message) error {
 	data, err := json.Marshal(m)
 	if err != nil {
 		return err
+	}
+
+	if m.Channel == "" {
+		return ErrChannelNotSet
 	}
 
 	res := redisConn.Publish(KeyWithPrefix(m.Channel), string(data))

@@ -43,10 +43,15 @@ func TestMessagePublish(t *testing.T) {
 
 	m := Message{}
 	m.Body = "can you picture that?"
-	m.Channel = "electric-mayhem"
 	m.Nickname = "kermit"
 
 	err := Send(m)
+	if err != ErrChannelNotSet {
+		t.Errorf("Expected %s but got %s", ErrChannelNotSet, err)
+	}
+
+	m.Channel = "electric-mayhem"
+	err = Send(m)
 	if err != nil {
 		t.Errorf("Expected nil but got %s", err)
 	}
