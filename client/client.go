@@ -80,7 +80,7 @@ func (c *Connection) Connect(nickname string) error {
 		c.ircConn.Quit()
 		return ErrTimeout
 	}
-
+	time.Sleep(time.Second * 15)
 	c.registerHandlers()
 
 	return nil
