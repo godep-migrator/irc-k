@@ -46,7 +46,8 @@ func (c *Connection) SendMessage(m *common.Message) error {
 		return err
 	}
 
-	c.ircConn.Privmsg(m.Channel, m.Body)
+	channel := prepareChannel(m.Channel)
+	c.ircConn.Privmsg(channel, m.Body)
 
 	return nil
 }
