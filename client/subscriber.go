@@ -11,14 +11,14 @@ import (
 
 type Subscriber struct {
 	redisConn *redis.Client
-	msg       chan common.Message
+	Rcv       chan common.Message
 	ps        *redis.PubSub
 }
 
 func NewSubscriber() *Subscriber {
 	s := new(Subscriber)
 	s.redisConn = common.NewRedis()
-	s.msg = make(chan common.Message, 0)
+	s.Rcv = make(chan common.Message, 0)
 	s.ps = s.redisConn.PubSub()
 
 	return s
@@ -42,6 +42,7 @@ func (s *Subscriber) Subscribe(channel string) error {
 	}
 
 	if response.Val() == 0 {
+		log.Printf("bot is already connected to channel: %s", channel)
 		return nil
 	}
 
@@ -69,7 +70,7 @@ func (s *Subscriber) Listen() error {
 				continue
 			}
 			msg.Channel = removePrefix(rm.Channel)
-			s.msg <- msg
+			s.Rcv <- msg
 		}
 
 	}

@@ -79,7 +79,7 @@ func TestListenChannel(t *testing.T) {
 	m.Channel = "muppet-kitchen"
 
 	go func() {
-		msg := <-s.msg
+		msg := <-s.Rcv
 		if msg.Nickname != m.Nickname {
 			t.Errorf("Expected %s as nickname but got %s", m.Nickname, msg.Nickname)
 		}
