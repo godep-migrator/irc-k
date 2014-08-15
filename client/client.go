@@ -3,6 +3,7 @@ package client
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/canthefason/irc-k/common"
@@ -111,10 +112,14 @@ func (c *Connection) registerHandlers() {
 
 	c.ircConn.HandleFunc("privmsg",
 		func(conn *irc.Conn, line *irc.Line) {
-
+			channel := line.Args[0]
+			if strings.IndexRune(channel, '#') == 0 {
+				channel = strings.Replace(channel, "#", "", 1)
+			}
 			m := common.Message{
 				Nickname: line.Nick,
 				Body:     line.Args[1],
+				Channel:  channel,
 			}
 
 			c.MsgChan <- m
