@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/canthefason/irc-k/config"
 	"github.com/canthefason/r2dq"
 	"gopkg.in/redis.v2"
 )
@@ -21,21 +20,29 @@ var (
 	ErrChannelNotSet = errors.New("channel not set")
 )
 
-func init() {
-	MustInitRedis()
-	MustInitQueue()
+type RedisConf struct {
+	Server string
+	Port   string
+	DB     int
+	Prefix string
 }
 
-func MustInitRedis() {
-	redisConn = NewRedis()
+func Initialize(r *RedisConf) *redis.Client {
+	MustInitRedis(r)
+	MustInitQueue(r)
+
+	return redisConn
 }
 
-func NewRedis() *redis.Client {
-	redisConf := config.Conf.Redis
+func MustInitRedis(r *RedisConf) {
+	redisConn = NewRedis(r)
+}
+
+func NewRedis(r *RedisConf) *redis.Client {
 	return redis.NewTCPClient(&redis.Options{
-		Addr:     fmt.Sprintf("%s:%s", redisConf.Server, redisConf.Port),
+		Addr:     fmt.Sprintf("%s:%s", r.Server, r.Port),
 		Password: "",
-		DB:       int64(redisConf.DB),
+		DB:       int64(r.DB),
 	})
 }
 
@@ -43,10 +50,9 @@ func MustGetRedis() *redis.Client {
 	return redisConn
 }
 
-func MustInitQueue() {
-	redisConf := config.Conf.Redis
-	redisAddr := fmt.Sprintf("%s:%s", redisConf.Server, redisConf.Port)
-	waitingQueue = r2dq.NewQueue(redisAddr, redisConf.DB, PREFIX)
+func MustInitQueue(r *RedisConf) {
+	redisAddr := fmt.Sprintf("%s:%s", r.Server, r.Port)
+	waitingQueue = r2dq.NewQueue(redisAddr, r.DB, PREFIX)
 }
 
 func MustGetQueue() *r2dq.Queue {

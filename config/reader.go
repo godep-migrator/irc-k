@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"code.google.com/p/gcfg"
+	"github.com/canthefason/irc-k/common"
 )
 
 type Config struct {
@@ -12,12 +13,7 @@ type Config struct {
 		Server  string
 		BotName string
 	}
-	Redis struct {
-		Server string
-		Port   string
-		DB     int
-		Prefix string
-	}
+	Redis common.RedisConf
 }
 
 var Conf *Config

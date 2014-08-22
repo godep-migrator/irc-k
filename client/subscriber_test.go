@@ -7,6 +7,16 @@ import (
 	"github.com/canthefason/irc-k/common"
 )
 
+func tearUp() *Subscriber {
+	conf := &common.RedisConf{
+		Server: "localhost",
+		Port:   6379,
+		DB:     3,
+		Prefix: "irc-test",
+	}
+	s := NewSubscriber(conf)
+}
+
 func tearDown(s *Subscriber) {
 	go func() {
 		s.redisConn.Del(common.KeyWithPrefix(common.REQ_CHANNELS_KEY))
@@ -19,7 +29,7 @@ func tearDown(s *Subscriber) {
 }
 
 func TestUserSubscribeValidation(t *testing.T) {
-	s := NewSubscriber()
+	s := tearUp()
 	defer tearDown(s)
 
 	err := s.Subscribe("")
@@ -34,7 +44,7 @@ func TestUserSubscribeValidation(t *testing.T) {
 }
 
 func TestAddNewChannel(t *testing.T) {
-	s := NewSubscriber()
+	s := tearUp()
 	defer tearDown(s)
 
 	err := s.Subscribe("canthefason-test")
@@ -64,7 +74,7 @@ func TestRemovePrefix(t *testing.T) {
 }
 
 func TestListenChannel(t *testing.T) {
-	s := NewSubscriber()
+	s := tearUp
 	if err := s.Subscribe("muppet-kitchen"); err != nil {
 		t.Errorf("Expected nil but got %s", err)
 	}

@@ -15,9 +15,10 @@ type Subscriber struct {
 	ps        *redis.PubSub
 }
 
-func NewSubscriber() *Subscriber {
+func NewSubscriber(r *common.RedisConf) *Subscriber {
 	s := new(Subscriber)
-	s.redisConn = common.NewRedis()
+
+	s.redisConn = common.Initialize(r)
 	s.Rcv = make(chan common.Message, 0)
 	s.ps = s.redisConn.PubSub()
 
