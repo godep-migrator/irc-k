@@ -27,6 +27,11 @@ type RedisConf struct {
 	Prefix string
 }
 
+type IrcConf struct {
+	Server  string
+	BotName string
+}
+
 func Initialize(r *RedisConf) *redis.Client {
 	MustInitRedis(r)
 	MustInitQueue(r)

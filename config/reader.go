@@ -9,10 +9,7 @@ import (
 )
 
 type Config struct {
-	IRC struct {
-		Server  string
-		BotName string
-	}
+	IRC   common.IrcConf
 	Redis common.RedisConf
 }
 

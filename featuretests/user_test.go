@@ -13,7 +13,7 @@ import (
 )
 
 func TestMessageHandling(t *testing.T) {
-	go feeder.Run(config.Conf.IRC.Server)
+	go feeder.Run(&config.Conf.IRC)
 
 	beaker := client.NewSubscriber(&config.Conf.Redis)
 	chef := new(client.Connection)
