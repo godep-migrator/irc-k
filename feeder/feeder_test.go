@@ -4,11 +4,21 @@ import (
 	"testing"
 
 	"github.com/canthefason/irc-k/common"
-	"github.com/canthefason/irc-k/config"
 )
 
 func tearUp() {
-	connect()
+	conf := &common.IrcConf{
+		Server:  "irc.freenode.net:7000",
+		BotName: "momo",
+	}
+	rConf := &common.RedisConf{
+		Server: "localhost",
+		Port:   "6379",
+		DB:     3,
+		Prefix: "irc-test",
+	}
+	common.Initialize(rConf)
+	connect(conf)
 }
 
 func tearDown() {
@@ -17,10 +27,11 @@ func tearDown() {
 }
 
 func TestPrepareBotName(t *testing.T) {
+	tearUp()
 	initialize()
 	defer tearDown()
-	botName := prepareBotName()
-	expectedBotName := config.Conf.IRC.BotName + "-1"
+	botName := prepareBotName("momo")
+	expectedBotName := "momo-2"
 	if botName != expectedBotName {
 		t.Errorf("Expected %s but got %s", expectedBotName, botName)
 	}

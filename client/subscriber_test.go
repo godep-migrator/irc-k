@@ -10,11 +10,11 @@ import (
 func tearUp() *Subscriber {
 	conf := &common.RedisConf{
 		Server: "localhost",
-		Port:   6379,
+		Port:   "6379",
 		DB:     3,
 		Prefix: "irc-test",
 	}
-	s := NewSubscriber(conf)
+	return NewSubscriber(conf)
 }
 
 func tearDown(s *Subscriber) {
@@ -74,7 +74,7 @@ func TestRemovePrefix(t *testing.T) {
 }
 
 func TestListenChannel(t *testing.T) {
-	s := tearUp
+	s := tearUp()
 	if err := s.Subscribe("muppet-kitchen"); err != nil {
 		t.Errorf("Expected nil but got %s", err)
 	}

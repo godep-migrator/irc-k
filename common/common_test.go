@@ -14,7 +14,14 @@ func tearDown() {
 
 func TestMessagePublish(t *testing.T) {
 	defer tearDown()
-	redisSubConn := NewRedis()
+	r := &RedisConf{
+		Server: "localhost",
+		Port:   "6379",
+		DB:     3,
+		Prefix: "irc-test",
+	}
+
+	redisSubConn := Initialize(r)
 
 	done := make(chan *redis.Message, 1)
 	quit := make(chan struct{}, 1)
