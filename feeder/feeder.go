@@ -12,7 +12,7 @@ import (
 	"github.com/canthefason/irc-k/common"
 	"github.com/canthefason/irc-k/config"
 	"github.com/canthefason/r2dq"
-	"gopkg.in/redis.v2"
+	redis "gopkg.in/redis.v2"
 )
 
 var (
@@ -39,8 +39,8 @@ func initialize() {
 // 2. server - waiting channels
 // 3. server - connected channels (why do i need this?)
 // 4. server - channel messages
-func Run() {
-	connect()
+func Run(server string) {
+	connect(server)
 	defer Close()
 
 	go func() {
@@ -72,12 +72,14 @@ func gracefulShutdown() {
 	}
 }
 
-func connect() {
+func connect(server string) {
 	initialize()
 	conn = new(client.Connection)
+	conn.Server = server
+	conn.Nickname = botName
 	botName = prepareBotName()
 
-	if err := conn.Connect(botName); err != nil {
+	if err := conn.Connect(); err != nil {
 		panic(err)
 	}
 }

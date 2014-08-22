@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/canthefason/irc-k/client"
+	"github.com/canthefason/irc-k/config"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"github.com/martini-contrib/render"
@@ -163,7 +164,8 @@ func Connect(nickname string) (*client.Connection, error) {
 
 	conn = new(client.Connection)
 	conn.Nickname = nickname
-	if err := conn.Connect(nickname); err != nil {
+	conn.Server = config.Conf.IRC.Server
+	if err := conn.Connect(); err != nil {
 		return nil, err
 	}
 

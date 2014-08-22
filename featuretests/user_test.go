@@ -7,15 +7,17 @@ import (
 
 	"github.com/canthefason/irc-k/client"
 	"github.com/canthefason/irc-k/common"
+	"github.com/canthefason/irc-k/config"
 	"github.com/canthefason/irc-k/feeder"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestMessageHandling(t *testing.T) {
-	go feeder.Run()
+	go feeder.Run(config.Conf.IRC.Server)
 
 	beaker := client.NewSubscriber()
 	chef := new(client.Connection)
+	chef.Server = config.Conf.IRC.Server
 
 	Convey("While system is up and running", t, func() {
 		Convey("Beaker should be able to receive messages from subscribed channel", func() {
@@ -24,7 +26,8 @@ func TestMessageHandling(t *testing.T) {
 				So(err, ShouldBeNil)
 			})
 			Convey("Chef should be able to prepare for sending a message", func() {
-				err := chef.Connect("chef")
+				chef.Nickname = "chef"
+				err := chef.Connect()
 				So(err, ShouldBeNil)
 			})
 			Convey("Beaker should be able to receive messages send by Chef", func() {

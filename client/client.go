@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/canthefason/irc-k/common"
-	"github.com/canthefason/irc-k/config"
 	irc "github.com/fluffle/goirc/client"
 )
 
@@ -23,6 +22,7 @@ const (
 type Connection struct {
 	Nickname string
 	MsgChan  chan common.Message
+	Server   string
 
 	ircConn *irc.Conn
 }
@@ -52,11 +52,11 @@ func (c *Connection) SendMessage(m *common.Message) error {
 	return nil
 }
 
-func (c *Connection) Connect(nickname string) error {
+func (c *Connection) Connect() error {
 
-	cfg := irc.NewConfig(nickname)
+	cfg := irc.NewConfig(c.Nickname)
 	cfg.SSL = true
-	cfg.Server = config.Conf.IRC.Server
+	cfg.Server = c.Server
 	cfg.NewNick = func(n string) string { return n + "^" }
 	c.ircConn = irc.Client(cfg)
 
