@@ -14,7 +14,7 @@ build:
           cd $WERCKER_SOURCE_DIR
           go get github.com/tools/godep
           go install github.com/tools/godep
-          $GOPATH/bin/godep go install
+          $GOPATH/bin/godep restore
     - script:
         name: go build
         code: |
