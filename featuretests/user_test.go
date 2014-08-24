@@ -15,6 +15,7 @@ import (
 func TestMessageHandling(t *testing.T) {
 	go feeder.Run(&config.Conf.IRC)
 
+	config.Conf.Redis.Prefix = "irc-test"
 	beaker := client.NewSubscriber(&config.Conf.Redis)
 	chef := new(client.Connection)
 	chef.Server = config.Conf.IRC.Server
