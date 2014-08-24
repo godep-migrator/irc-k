@@ -16,6 +16,7 @@ import (
 var (
 	ErrNotSet  = errors.New("not set")
 	ErrUnknown = errors.New("unknown error")
+	connMap    map[string]*client.Connection
 )
 
 func init() {
