@@ -90,14 +90,6 @@ func (mr *MessageRequest) mapToMessage() *common.Message {
 	return m
 }
 
-func (cr *ChannelRequest) mapToChannel() *client.Channel {
-	c := new(client.Channel)
-	c.Nickname = cr.Nickname
-	c.Name = cr.Name
-
-	return c
-}
-
 func mapValidatorError(err error) error {
 	switch err {
 	case validator.ErrZeroValue:
