@@ -20,6 +20,20 @@ func TestMessageHandling(t *testing.T) {
 	chef := new(client.Connection)
 	chef.Server = config.Conf.IRC.Server
 
+	tearDown := func() {
+		res := common.MustGetRedis().Del(common.KeyWithPrefix(feeder.BOT_COUNT))
+		if res.Err() != nil {
+			fmt.Println(res.Err())
+		}
+		res = common.MustGetRedis().Del(common.KeyWithPrefix(common.REQ_CHANNELS_KEY))
+		if res.Err() != nil {
+			fmt.Println(res.Err())
+		}
+		beaker.Close()
+		feeder.Close()
+	}
+	defer tearDown()
+
 	Convey("While system is up and running", t, func() {
 		Convey("Beaker should be able to receive messages from subscribed channel", func() {
 			Convey("Beaker should be able to join channel", func() {
@@ -44,7 +58,6 @@ func TestMessageHandling(t *testing.T) {
 				msg.Channel = "muppetsinspace"
 				err := chef.SendMessage(msg)
 				So(err, ShouldBeNil)
-
 				select {
 				case m := <-complete:
 					So(m.Body, ShouldEqual, "dupdupdupdup")
@@ -56,16 +69,4 @@ func TestMessageHandling(t *testing.T) {
 		})
 
 	})
-	func() {
-		res := common.MustGetRedis().Del(common.KeyWithPrefix(feeder.BOT_COUNT))
-		if res.Err() != nil {
-			fmt.Println(res.Err())
-		}
-		res = common.MustGetRedis().Del(common.KeyWithPrefix(common.REQ_CHANNELS_KEY))
-		if res.Err() != nil {
-			fmt.Println(res.Err())
-		}
-		feeder.Close()
-	}()
-
 }
