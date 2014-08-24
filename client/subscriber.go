@@ -10,9 +10,11 @@ import (
 )
 
 type Subscriber struct {
+	Rcv chan common.Message
+
 	redisConn *redis.Client
-	Rcv       chan common.Message
 	ps        *redis.PubSub
+	quit      bool
 }
 
 func NewSubscriber(r *common.RedisConf) *Subscriber {
@@ -54,10 +56,13 @@ func (s *Subscriber) Subscribe(channel string) error {
 	return nil
 }
 
-func (s *Subscriber) Listen() error {
+func (s *Subscriber) Listen() {
 	for {
 		res, err := s.ps.Receive()
 		if err != nil {
+			if s.quit {
+				return
+			}
 			panic(err)
 		}
 
@@ -73,11 +78,12 @@ func (s *Subscriber) Listen() error {
 			msg.Channel = removePrefix(rm.Channel)
 			s.Rcv <- msg
 		}
-
 	}
 }
 
 func (s *Subscriber) Close() error {
+	s.quit = true
+	s.ps.Close()
 	return s.redisConn.Close()
 }
 
