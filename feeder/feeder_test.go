@@ -1,6 +1,7 @@
 package feeder
 
 import (
+	"os"
 	"testing"
 
 	"github.com/canthefason/irc-k/common"
@@ -17,6 +18,15 @@ func tearUp() {
 		DB:     3,
 		Prefix: "irc-test",
 	}
+
+	// TODO later on handle this via github.com/danryan/env
+	if env := os.Getenv("REDIS_HOST"); env != "" {
+		rConf.Server = env
+	}
+	if env := os.Getenv("REDIS_PORT"); env != "" {
+		rConf.Port = os.Getenv("REDIS_PORT")
+	}
+
 	common.Initialize(rConf)
 	connect(conf)
 }

@@ -1,6 +1,7 @@
 package client
 
 import (
+	"os"
 	"sync"
 	"testing"
 	"time"
@@ -15,6 +16,16 @@ func tearUp() *Subscriber {
 		DB:     3,
 		Prefix: "irc-test",
 	}
+
+	// TODO later on handle this via github.com/danryan/env
+	if env := os.Getenv("REDIS_HOST"); env != "" {
+		conf.Server = env
+	}
+
+	if env := os.Getenv("REDIS_PORT"); env != "" {
+		conf.Port = os.Getenv("REDIS_PORT")
+	}
+
 	return NewSubscriber(conf)
 }
 

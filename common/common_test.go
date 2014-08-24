@@ -2,6 +2,7 @@ package common
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
 
@@ -19,6 +20,14 @@ func TestMessagePublish(t *testing.T) {
 		Port:   "6379",
 		DB:     3,
 		Prefix: "irc-test",
+	}
+
+	// TODO later on handle this via github.com/danryan/env
+	if env := os.Getenv("REDIS_HOST"); env != "" {
+		r.Server = env
+	}
+	if env := os.Getenv("REDIS_PORT"); env != "" {
+		r.Port = os.Getenv("REDIS_PORT")
 	}
 
 	redisSubConn := Initialize(r)
