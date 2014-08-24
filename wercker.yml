@@ -1,0 +1,26 @@
+box: wercker/golang@1.2.0
+services:
+  - wercker/redis@0.0.8
+
+build:
+  steps:
+    - setup-go-workspace
+    - script:
+        name: set environment variables
+        code: export REDIS_HOST=$WERCKER_REDIS_HOST; export REDIS_PORT=$WERCKER_REDIS_PORT
+    - script:
+        name: go get
+        code: |
+          cd $WERCKER_SOURCE_DIR
+          go get github.com/tools/godep
+          go install github.com/tools/godep
+          $GOPATH/bin/godep go install
+    - script:
+        name: go build
+        code: |
+          go build ./...
+    - script:
+        name: go test
+        code: |
+          go test ./...
+
