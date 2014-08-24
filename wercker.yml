@@ -23,7 +23,13 @@ build:
           go build ./feeder
           go build ./
     - script:
-        name: go test
+        name: go unit tests
         code: |
-          go test ./...
+          go test ./client
+          go test ./common
+          go test ./feeder
+    - script:
+        name: go integration tests
+        code: |
+          go test ./featuretests
 
