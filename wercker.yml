@@ -18,7 +18,10 @@ build:
     - script:
         name: go build
         code: |
-          go build ./...
+          go build ./common
+          go build ./client
+          go build ./feeder
+          go build ./
     - script:
         name: go test
         code: |
