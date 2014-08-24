@@ -142,8 +142,8 @@ func join(_ martini.Params, cr ChannelRequest, r render.Render) {
 		return
 	}
 
-	c := cr.mapToChannel()
-	if err := c.Join(); err != nil {
+	s := client.NewSubscriber(&config.Conf.Redis)
+	if err := s.Subscribe(cr.Name); err != nil {
 		fail(r, err)
 	}
 
