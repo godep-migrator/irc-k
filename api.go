@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/canthefason/irc-k/client"
+	"github.com/canthefason/irc-k/common"
 	"github.com/canthefason/irc-k/config"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
@@ -80,8 +81,8 @@ type ChannelRequest struct {
 	Nickname string `json:"nickname" binding:"required" validate:"nonzero"`
 }
 
-func (mr *MessageRequest) mapToMessage() *client.Message {
-	m := new(client.Message)
+func (mr *MessageRequest) mapToMessage() *common.Message {
+	m := new(common.Message)
 	m.Nickname = mr.Nickname
 	m.Body = mr.Body
 	m.Channel = mr.Channel
