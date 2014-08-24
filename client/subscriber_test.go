@@ -1,6 +1,7 @@
 package client
 
 import (
+	"sync"
 	"testing"
 	"time"
 
@@ -18,14 +19,20 @@ func tearUp() *Subscriber {
 }
 
 func tearDown(s *Subscriber) {
+	var wg sync.WaitGroup
+	wg.Add(2)
 	go func() {
+		defer wg.Done()
 		s.redisConn.Del(common.KeyWithPrefix(common.REQ_CHANNELS_KEY))
 		s.Close()
 	}()
+
 	go func() {
+		defer wg.Done()
 		common.MustGetQueue().Purge()
-		// common.Close()
+		common.Close()
 	}()
+	wg.Wait()
 }
 
 func TestUserSubscribeValidation(t *testing.T) {
