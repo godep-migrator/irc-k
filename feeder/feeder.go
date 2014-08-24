@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/canthefason/irc-k/client"
@@ -22,6 +23,7 @@ var (
 	channels       []string
 	queue          *r2dq.Queue
 	botName        string
+	opened         bool
 )
 
 const BOT_COUNT = "botcount"
@@ -31,6 +33,7 @@ func initialize() {
 	quit = make(chan os.Signal)
 	channels = make([]string, 0)
 	queue = common.MustGetQueue()
+	opened = true
 }
 
 // four different sets
@@ -56,11 +59,21 @@ func Run(i *common.IrcConf) {
 // close iterates over connected channels and adds them to waiting channel list
 // for further connections
 func Close() {
-	go redisConn.Close()
+	opened = false
+	var wg sync.WaitGroup
+	wg.Add(2)
 	go func() {
+		defer wg.Done()
+		redisConn.Close()
+	}()
+
+	go func() {
+		defer wg.Done()
 		defer queue.Close()
 		gracefulShutdown()
 	}()
+
+	wg.Wait()
 }
 
 func gracefulShutdown() {
@@ -87,6 +100,9 @@ func connectToChannel() {
 	// get a channel from waiting list
 	channel, err := queue.Dequeue()
 	if err != nil {
+		if !opened {
+			return
+		}
 		panic(err)
 	}
 
