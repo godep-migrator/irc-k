@@ -1,3 +1,15 @@
+// Package client has two responsibilities:
+//
+// 1. Establishes irc connections via Connection
+//
+// 2. Subscribes to channel messages via Subscriber
+//
+// Connection serves as a simple irc client wrapper for sending/receiving
+// messages and joining public channels. It does not
+// support any other irc operations.
+//
+// Subscriber can be considered as an irc channel feeder.
+// After subscribing a channel, user is notified for further messages.
 package client
 
 import (
@@ -14,11 +26,18 @@ const (
 	CONN_TIMEOUT = 5 * time.Second
 )
 
+// Connection holds the required connection data for client
 type Connection struct {
+	// preferred user nickname
 	Nickname string
-	MsgChan  chan common.Message
-	Server   string
 
+	// received messages are piped into this channel
+	MsgChan chan common.Message
+
+	// freenode server definition. it must be defined as host:port
+	Server string
+
+	// irc connection
 	ircConn *irc.Conn
 
 	// connection result errors are piped
@@ -37,11 +56,13 @@ func NewConnection() *Connection {
 	return c
 }
 
-// prepareChannel appends # sign to channel name
+// prepareChannel forms channel name in format #(channel-name)
 func prepareChannel(channel string) string {
 	return fmt.Sprintf("#%s", channel)
 }
 
+// SendMessage validates message, joins to given channel and sends message.
+// Before sending any messages connection must be established first
 func (c *Connection) SendMessage(m *common.Message) error {
 	if err := m.Validate(); err != nil {
 		return err
@@ -57,6 +78,8 @@ func (c *Connection) SendMessage(m *common.Message) error {
 	return nil
 }
 
+// Connect creates irc connection and register event handlers.
+// If connection times out, it returns timeout error
 func (c *Connection) Connect() error {
 
 	cfg := irc.NewConfig(c.Nickname)
@@ -85,12 +108,14 @@ func (c *Connection) Connect() error {
 		c.ircConn.Quit()
 		return ErrTimeout
 	}
+	// TODO instead of sleeping, it needs to handle connected event
 	time.Sleep(time.Second * 15)
 	c.registerHandlers()
 
 	return nil
 }
 
+// Join connects user to given channel if irc connection is established
 func (c *Connection) Join(channelName string) error {
 	if channelName == "" {
 		return ErrChannelNotSet
@@ -106,6 +131,8 @@ func (c *Connection) Join(channelName string) error {
 	return nil
 }
 
+// registerHandler registers user to connected, privmsg and disconnected
+// irc events. When more operators needed, handlers must be registered here.
 func (c *Connection) registerHandlers() {
 	c.MsgChan = make(chan common.Message, 0)
 	c.ircConn.HandleFunc("connected",
