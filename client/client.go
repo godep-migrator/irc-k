@@ -10,11 +10,6 @@ import (
 	irc "github.com/fluffle/goirc/client"
 )
 
-var (
-	quit    chan bool
-	connRes chan error
-)
-
 const (
 	CONN_TIMEOUT = 5 * time.Second
 )
@@ -25,11 +20,21 @@ type Connection struct {
 	Server   string
 
 	ircConn *irc.Conn
+
+	// connection result errors are piped
+	connRes chan error
+
+	// disconnected event publishes state through this channel
+	quit chan bool
 }
 
-func init() {
-	connRes = make(chan error)
-	quit = make(chan bool)
+// NewConnection creates connection instance with channels
+func NewConnection() *Connection {
+	c := new(Connection)
+	c.connRes = make(chan error)
+	c.quit = make(chan bool)
+
+	return c
 }
 
 // prepareChannel appends # sign to channel name
@@ -63,16 +68,16 @@ func (c *Connection) Connect() error {
 	go func() {
 		if err := c.ircConn.Connect(); err != nil {
 			log.Printf("an error occurred: %s \n", err)
-			connRes <- ErrInternal
+			c.connRes <- ErrInternal
 			return
 		}
 		// just for debugging purposes
 		fmt.Printf(c.ircConn.String())
-		connRes <- nil
+		c.connRes <- nil
 	}()
 
 	select {
-	case err := <-connRes:
+	case err := <-c.connRes:
 		if err != nil {
 			return err
 		}
@@ -109,7 +114,10 @@ func (c *Connection) registerHandlers() {
 		})
 
 	c.ircConn.HandleFunc("disconnected",
-		func(conn *irc.Conn, line *irc.Line) { quit <- true })
+		//TODO handle disconnection
+		func(conn *irc.Conn, line *irc.Line) {
+			c.quit <- true
+		})
 
 	c.ircConn.HandleFunc("privmsg",
 		func(conn *irc.Conn, line *irc.Line) {

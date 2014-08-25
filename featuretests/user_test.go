@@ -17,7 +17,7 @@ func TestMessageHandling(t *testing.T) {
 
 	config.Conf.Redis.Prefix = "irc-test"
 	beaker := client.NewSubscriber(&config.Conf.Redis)
-	chef := new(client.Connection)
+	chef := client.NewConnection()
 	chef.Server = config.Conf.IRC.Server
 
 	tearDown := func() {

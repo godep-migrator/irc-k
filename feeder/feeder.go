@@ -86,7 +86,7 @@ func gracefulShutdown() {
 
 func connect(i *common.IrcConf) {
 	initialize()
-	conn = new(client.Connection)
+	conn = client.NewConnection()
 	conn.Server = i.Server
 	conn.Nickname = botName
 	botName = prepareBotName(i.BotName)

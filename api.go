@@ -156,7 +156,7 @@ func Connect(nickname string) (*client.Connection, error) {
 		return conn, nil
 	}
 
-	conn = new(client.Connection)
+	conn = client.NewConnection()
 	conn.Nickname = nickname
 	conn.Server = config.Conf.IRC.Server
 	if err := conn.Connect(); err != nil {
