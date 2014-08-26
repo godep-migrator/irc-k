@@ -12,7 +12,7 @@
 		},
 		{
 			"ImportPath": "github.com/canthefason/r2dq",
-			"Rev": "db016b5c6c492e200922a5adc60080dfe7f45fe2"
+			"Rev": "3529a65e964e300c8374debb5a11617301e79f0a"
 		},
 		{
 			"ImportPath": "github.com/codegangsta/inject",
