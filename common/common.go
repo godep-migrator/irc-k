@@ -18,6 +18,8 @@ var (
 	redisConn        *redis.Client
 	waitingQueue     *r2dq.Queue
 	ErrChannelNotSet = errors.New("channel not set")
+	ErrRedisNotInit  = errors.New("redis not initialized")
+	ErrQueueNotInit  = errors.New("queue not initialized")
 )
 
 type RedisConf struct {
@@ -52,6 +54,10 @@ func NewRedis(r *RedisConf) *redis.Client {
 }
 
 func MustGetRedis() *redis.Client {
+	if redisConn == nil {
+		panic(ErrRedisNotInit)
+	}
+
 	return redisConn
 }
 
@@ -61,6 +67,10 @@ func MustInitQueue(r *RedisConf) {
 }
 
 func MustGetQueue() *r2dq.Queue {
+	if waitingQueue == nil {
+		panic(ErrQueueNotInit)
+	}
+
 	return waitingQueue
 }
 
