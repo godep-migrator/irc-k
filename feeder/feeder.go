@@ -1,3 +1,5 @@
+// Package feeder creates a feeder for joining channels,
+// and publishes received messages to channel subscribers.
 package feeder
 
 import (
@@ -16,16 +18,19 @@ import (
 )
 
 var (
-	redisConn      *redis.Client
-	conn           *client.Connection
 	ErrConnNotInit = errors.New("connection not initialized")
-	quit           chan os.Signal
-	channels       []string
-	queue          *r2dq.Queue
-	botName        string
-	opened         bool
+
+	redisConn *redis.Client
+	conn      *client.Connection
+	quit      chan os.Signal
+	channels  []string
+	queue     *r2dq.Queue
+	botName   string
+	opened    bool
+	closeChan chan struct{}
 )
 
+// Used for storing bot count in redis
 const BOT_COUNT = "botcount"
 
 func initialize() {
@@ -37,11 +42,8 @@ func initialize() {
 	opened = true
 }
 
-// four different sets
-// 1. user - subscribed channels
-// 2. server - waiting channels
-// 3. server - connected channels (why do i need this?)
-// 4. server - channel messages
+// Run initializes irc connection via bots, and joins queued
+// channels
 func Run(i *common.IrcConf) {
 	connect(i)
 	defer Close()
@@ -56,8 +58,8 @@ func Run(i *common.IrcConf) {
 	}
 }
 
-// close iterates over connected channels and adds them to waiting channel list
-// for further connections
+// Close iterates over connected channels and adds them to waiting channel list
+// for further connections.
 func Close() {
 	opened = false
 	var wg sync.WaitGroup
@@ -81,7 +83,7 @@ func Close() {
 func gracefulShutdown() {
 	for _, channel := range channels {
 		if err := queue.Queue(channel); err != nil {
-			log.Printf("Critical: channel %s could not be requeued: %s", channel, err)
+			log.Printf("Critical: channel %s can not be requeued: %s", channel, err)
 		}
 	}
 }
