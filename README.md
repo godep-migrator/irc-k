@@ -1,6 +1,6 @@
 irc-k
 =====
-[![wercker status](https://app.wercker.com/status/60ef4a323670ec84f81e9afa7bc51246/s "wercker status")](https://app.wercker.com/project/bykey/60ef4a323670ec84f81e9afa7bc51246)
+[![GoDoc](https://godoc.org/github.com/canthefason/irc-k?status.png)](https://godoc.org/github.com/canthefason/irc-k) [![wercker status](https://app.wercker.com/status/60ef4a323670ec84f81e9afa7bc51246/s "wercker status")](https://app.wercker.com/project/bykey/60ef4a323670ec84f81e9afa7bc51246)
 
 irc-k is an experimental irc client wrapper in Go.
 
