@@ -45,11 +45,7 @@ func Run(i *common.IrcConf) {
 	connect(i)
 	defer Close()
 
-	go func() {
-		for {
-			connectToChannel()
-		}
-	}()
+	go connectToChannel()
 
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
@@ -97,28 +93,30 @@ func connect(i *common.IrcConf) {
 }
 
 func connectToChannel() {
-	// get a channel from waiting list
-	channel, err := queue.Dequeue()
-	if err != nil {
-		if !opened {
+	for {
+		// get a channel from waiting list
+		channel, err := queue.Dequeue()
+		if err != nil {
+			if !opened {
+				return
+			}
+			panic(err)
+		}
+
+		// try to join channel
+		if err := conn.Join(channel); err != nil {
+			log.Printf("An error occurred while joining channel: %s", err)
+			queue.NAck(channel)
 			return
 		}
-		panic(err)
+
+		log.Printf("%s connected to channel: %s", botName, channel)
+
+		go handleMessages(conn)
+
+		channels = append(channels, channel)
+		queue.Ack(channel)
 	}
-
-	// try to join channel
-	if err := conn.Join(channel); err != nil {
-		log.Printf("An error occurred while joining channel: %s", err)
-		queue.NAck(channel)
-		return
-	}
-
-	log.Printf("%s connected to channel: %s", botName, channel)
-
-	go handleMessages(conn)
-
-	channels = append(channels, channel)
-	queue.Ack(channel)
 }
 
 func prepareBotName(botname string) string {
@@ -131,16 +129,9 @@ func prepareBotName(botname string) string {
 }
 
 func handleMessages(conn *client.Connection) {
-	for {
-		select {
-		case m := <-conn.MsgChan:
-			if err := common.Send(m); err != nil {
-				log.Printf("An error occurred while sending message: %s", err)
-			}
-		case <-quit:
-			return
+	for m := range conn.MsgChan {
+		if err := common.Send(m); err != nil {
+			log.Printf("An error occurred while sending message: %s", err)
 		}
-
 	}
-
 }
