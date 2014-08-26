@@ -38,7 +38,7 @@ func initialize(r *common.RedisConf) {
 	quit = make(chan os.Signal)
 	channels = make([]string, 0)
 	joinChan = make(chan string)
-	closeQueue = make(chan bool)
+	closeQueue = make(chan bool, 1)
 	queue = common.MustGetQueue()
 }
 
