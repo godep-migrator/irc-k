@@ -3,6 +3,7 @@ package feeder
 import (
 	"os"
 	"testing"
+	"time"
 
 	"github.com/canthefason/irc-k/common"
 )
@@ -28,18 +29,19 @@ func tearUp() {
 	}
 
 	common.Initialize(rConf)
-	connect(conf)
+	connect(conf, rConf)
 }
 
 func tearDown() {
 	redisConn.Del(common.KeyWithPrefix(BOT_COUNT))
 	queue.Purge()
+	redisConn.Close()
 }
 
 func TestPrepareBotName(t *testing.T) {
 	tearUp()
-	initialize()
 	defer tearDown()
+	// momo-1 is initialized in tearUp
 	botName := prepareBotName("momo")
 	expectedBotName := "momo-2"
 	if botName != expectedBotName {
@@ -53,8 +55,17 @@ func TestInitChannels(t *testing.T) {
 	defer tearDown()
 
 	queue.Queue("test-channel")
-	connectToChannel()
-
+	go connectToChannel()
+	select {
+	case channel := <-joinChan:
+		if channel != "test-channel" {
+			t.Errorf("Expected %s but got %s", "test-channel", channel)
+		}
+	case <-time.After(3 * time.Second):
+		t.Error("Expected channel but got timeout")
+		t.FailNow()
+	}
+	queue.StopDequeue()
 	if len(channels) != 1 {
 		t.Errorf("Expected 1 but got %d", len(channels))
 	}
@@ -73,11 +84,26 @@ func TestCloseFeeder(t *testing.T) {
 		t.Errorf("Expected %d but got %d", 1, length)
 	}
 
-	connectToChannel()
+	go connectToChannel()
+	select {
+	case channel := <-joinChan:
+		if channel != "test-channel" {
+			t.Errorf("Expected %s but got %s", "test-channel", channel)
+		}
+	case <-time.After(2 * time.Second):
+		t.Error("Expected channel but got timeout")
+		t.FailNow()
+	}
 
 	length, _ = queue.Len()
 	if length != 0 {
 		t.Errorf("Expected %d but got %d", 0, length)
+		t.FailNow()
+	}
+
+	if len(channels) == 0 {
+		t.Errorf("Expected %d channels but got %d", 1, len(channels))
+		t.FailNow()
 	}
 
 	gracefulShutdown()
@@ -85,5 +111,6 @@ func TestCloseFeeder(t *testing.T) {
 	length, _ = queue.Len()
 	if length != 1 {
 		t.Errorf("Expected %d but got %d", 1, length)
+		t.FailNow()
 	}
 }

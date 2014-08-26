@@ -8,7 +8,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
 
 	"github.com/canthefason/irc-k/client"
@@ -26,61 +25,50 @@ var (
 	channels  []string
 	queue     *r2dq.Queue
 	botName   string
-	opened    bool
-	closeChan chan struct{}
+	// used for getting joined channels
+	joinChan   chan string
+	closeQueue chan bool
 )
 
 // Used for storing bot count in redis
 const BOT_COUNT = "botcount"
 
-func initialize() {
-	redisConn = common.MustGetRedis()
+func initialize(r *common.RedisConf) {
+	redisConn = common.NewRedis(r)
 	quit = make(chan os.Signal)
-	closeChan = make(chan struct{})
 	channels = make([]string, 0)
+	joinChan = make(chan string)
+	closeQueue = make(chan bool)
 	queue = common.MustGetQueue()
-	opened = true
 }
 
 // Run initializes irc connection via bots, and joins queued
 // channels
-func Run(i *common.IrcConf) {
-	connect(i)
+func Run(i *common.IrcConf, r *common.RedisConf) {
+	connect(i, r)
 	defer Close()
 
 	go connectToChannel()
 
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	select {
-	case <-quit:
-	case <-closeChan:
-	}
+	<-quit
 }
 
 // Close iterates over connected channels and adds them to waiting channel list
 // for further connections.
 func Close() {
-	opened = false
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		redisConn.Close()
-	}()
+	defer queue.Close()
+	defer redisConn.Close()
+	gracefulShutdown()
 
-	go func() {
-		defer wg.Done()
-		gracefulShutdown()
-		queue.Close()
-	}()
-
-	wg.Wait()
-
-	closeChan <- struct{}{}
+	close(quit)
 }
 
 func gracefulShutdown() {
+	queue.StopDequeue()
+	<-closeQueue
+	// first close redis connection to prevent further channel consuming
 	for _, channel := range channels {
 		if err := queue.Queue(channel); err != nil {
 			log.Printf("Critical: channel %s can not be requeued: %s", channel, err)
@@ -88,8 +76,8 @@ func gracefulShutdown() {
 	}
 }
 
-func connect(i *common.IrcConf) {
-	initialize()
+func connect(i *common.IrcConf, r *common.RedisConf) {
+	initialize(r)
 	conn = client.NewConnection()
 	conn.Server = i.Server
 	conn.Nickname = botName
@@ -104,10 +92,12 @@ func connectToChannel() {
 	for {
 		// get a channel from waiting list
 		channel, err := queue.Dequeue()
+		if err == r2dq.ErrConnClosed {
+			closeQueue <- true
+			return
+		}
+
 		if err != nil {
-			if !opened {
-				return
-			}
 			panic(err)
 		}
 
@@ -119,7 +109,7 @@ func connectToChannel() {
 		}
 
 		log.Printf("%s connected to channel: %s", botName, channel)
-
+		joinChan <- channel
 		go handleMessages(conn)
 
 		channels = append(channels, channel)
