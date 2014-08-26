@@ -89,6 +89,8 @@ func connect(i *common.IrcConf, r *common.RedisConf) {
 }
 
 func connectToChannel() {
+	go handleMessages(conn)
+
 	for {
 		// get a channel from waiting list
 		channel, err := queue.Dequeue()
@@ -110,7 +112,6 @@ func connectToChannel() {
 
 		log.Printf("%s connected to channel: %s", botName, channel)
 		joinChan <- channel
-		go handleMessages(conn)
 
 		channels = append(channels, channel)
 		queue.Ack(channel)
