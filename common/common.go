@@ -1,3 +1,5 @@
+// Package common provides redis and channel queue connections
+// Common is used by client, config and feeder packages
 package common
 
 import (
@@ -10,8 +12,11 @@ import (
 )
 
 const (
+	// used for storing all channel names in a set
 	REQ_CHANNELS_KEY = "requested-channels"
-	PREFIX           = "irc-k"
+
+	// redis key prefix
+	PREFIX = "irc-k"
 )
 
 var (
@@ -22,6 +27,7 @@ var (
 	ErrQueueNotInit  = errors.New("queue not initialized")
 )
 
+// RedisConf holds redis connection data
 type RedisConf struct {
 	Server string
 	Port   string
@@ -29,11 +35,15 @@ type RedisConf struct {
 	Prefix string
 }
 
+// IrcConf holds irc connection data
 type IrcConf struct {
-	Server  string
+	// Server name is set as hostname:port
+	Server string
+	// Stores botname to be used by feeder
 	BotName string
 }
 
+// Initialize initilizes redis and queue connections
 func Initialize(r *RedisConf) *redis.Client {
 	MustInitRedis(r)
 	MustInitQueue(r)
@@ -41,10 +51,12 @@ func Initialize(r *RedisConf) *redis.Client {
 	return redisConn
 }
 
+// MustInitRedis initialize global redis connection
 func MustInitRedis(r *RedisConf) {
 	redisConn = NewRedis(r)
 }
 
+// NewRedis creates a new redis connection
 func NewRedis(r *RedisConf) *redis.Client {
 	return redis.NewTCPClient(&redis.Options{
 		Addr:     fmt.Sprintf("%s:%s", r.Server, r.Port),
@@ -53,6 +65,8 @@ func NewRedis(r *RedisConf) *redis.Client {
 	})
 }
 
+// MustGetRedis returns global redis connection. It panics when
+// redis connection is not yet initialized
 func MustGetRedis() *redis.Client {
 	if redisConn == nil {
 		panic(ErrRedisNotInit)
@@ -61,11 +75,13 @@ func MustGetRedis() *redis.Client {
 	return redisConn
 }
 
+// MustInitQueue initializes channel queue
 func MustInitQueue(r *RedisConf) {
 	redisAddr := fmt.Sprintf("%s:%s", r.Server, r.Port)
 	waitingQueue = r2dq.NewQueue(redisAddr, r.DB, PREFIX)
 }
 
+// MustGetQueue returns channel queue
 func MustGetQueue() *r2dq.Queue {
 	if waitingQueue == nil {
 		panic(ErrQueueNotInit)
@@ -74,15 +90,18 @@ func MustGetQueue() *r2dq.Queue {
 	return waitingQueue
 }
 
+// Close closes both redis and queue connections
 func Close() {
 	redisConn.Close()
 	waitingQueue.Close()
 }
 
+// KeyWithPrefix appends prefix constant to the given key
 func KeyWithPrefix(key string) string {
 	return fmt.Sprintf("%s:%s", PREFIX, key)
 }
 
+// Send publishes message to the related channel
 func Send(m Message) error {
 	data, err := json.Marshal(m)
 	if err != nil {
