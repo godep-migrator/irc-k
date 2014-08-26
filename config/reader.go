@@ -1,3 +1,6 @@
+// Package config provides configuration data for main package
+// For overriding redis host and port settings, REDIS_HOST and
+// REDIS_POST environment variables are used
 package config
 
 import (
@@ -13,6 +16,7 @@ type Config struct {
 	Redis common.RedisConf
 }
 
+// Exposed root config
 var Conf *Config
 
 func init() {
