@@ -111,7 +111,7 @@ func connectToChannel() {
 		}
 
 		log.Printf("%s connected to channel: %s", botName, channel)
-		joinChan <- channel
+		go func() { joinChan <- channel }()
 
 		channels = append(channels, channel)
 		queue.Ack(channel)
