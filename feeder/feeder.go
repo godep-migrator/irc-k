@@ -31,6 +31,7 @@ const BOT_COUNT = "botcount"
 func initialize() {
 	redisConn = common.MustGetRedis()
 	quit = make(chan os.Signal)
+	closeChan = make(chan struct{})
 	channels = make([]string, 0)
 	queue = common.MustGetQueue()
 	opened = true
@@ -49,7 +50,10 @@ func Run(i *common.IrcConf) {
 
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
-	<-quit
+	select {
+	case <-quit:
+	case <-closeChan:
+	}
 }
 
 // close iterates over connected channels and adds them to waiting channel list
@@ -65,11 +69,13 @@ func Close() {
 
 	go func() {
 		defer wg.Done()
-		defer queue.Close()
 		gracefulShutdown()
+		queue.Close()
 	}()
 
 	wg.Wait()
+
+	closeChan <- struct{}{}
 }
 
 func gracefulShutdown() {
